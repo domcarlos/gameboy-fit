@@ -1,0 +1,426 @@
+{
+  "$schema": "https://gameboy.fit/cartridge/v1",
+  "cartridge": {
+    "id": "uuid-v4",
+    "version": "1.0.0",
+    "type": "official",
+    "meta": {
+      "title": "Futebol de Elite — Força + Hipertrofia",
+      "author": "Paulo Paulada",
+      "author_type": "official",
+      "sport_focus": ["futebol", "musculação"],
+      "description": "Programa para retorno ao futebol de alto nível com foco em força, hipertrofia e prevenção de lesão lombar.",
+      "cover": {
+        "bg_color": "#0D0D0D",
+        "accent_color": "#00FF88",
+        "label_text": "ELITE FUTEBOL",
+        "art_style": "official"
+      },
+      "tags": ["futebol", "força", "hipertrofia", "lombar", "adulto"],
+      "created_at": "2026-05-15",
+      "weeks": 8,
+      "sessions_per_week": 3
+    },
+    "programs": [
+      {
+        "id": "prog_a",
+        "label": "A",
+        "title": "Posterior · Glúteo · Costas",
+        "focus": "foco futebol + hipertrofia",
+        "duration_min": 55,
+        "muscle_groups": ["glúteo", "posterior", "costas", "core"],
+        "sections": [
+          {
+            "id": "sec_gluteo",
+            "title": "Glúteo · Posterior — Motor do chute",
+            "exercises": [
+              {
+                "id": "ex_01",
+                "order": 1,
+                "name": "Hip Thrust Barra",
+                "sets": 4,
+                "reps": 8,
+                "load_suggested_kg": 60,
+                "load_type": "barbell",
+                "execution_note": "Motor principal do chute · concêntrico explosivo · isquiotibial + glúteo",
+                "priority": true,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 90,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_02",
+                "order": 2,
+                "name": "Stiff / RDL Barra",
+                "sets": 3,
+                "reps": 8,
+                "load_suggested_kg": 45,
+                "load_type": "barbell",
+                "execution_note": "Excêntrico lento · concêntrico explosivo · posterior de coxa",
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 90,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_03",
+                "order": 3,
+                "name": "Nordic Curl",
+                "sets": 3,
+                "reps": 6,
+                "load_suggested_kg": null,
+                "load_type": "bodyweight",
+                "execution_note": "Prevenção de lesão isquiotibial · essencial para jogadores de futebol",
+                "priority": true,
+                "paired_with": null,
+                "load_unit": null,
+                "rest_seconds": 120,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_04",
+                "order": 4,
+                "name": "Afundo Unilateral",
+                "sets": 3,
+                "reps": 8,
+                "load_suggested_kg": 36,
+                "load_type": "dumbbell",
+                "execution_note": "Estabilidade de quadril · equilíbrio bilateral",
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 75,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_05",
+                "order": 5,
+                "name": "Mesa Flexora Unilateral",
+                "sets": 3,
+                "reps": 10,
+                "load_suggested_kg": 30,
+                "load_type": "machine",
+                "execution_note": null,
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 75,
+                "timer_per_rep": false
+              }
+            ]
+          },
+          {
+            "id": "sec_costas",
+            "title": "Costas",
+            "exercises": [
+              {
+                "id": "ex_06",
+                "order": 6,
+                "name": "Puxada Alta Polia Aberta",
+                "sets": 4,
+                "reps": 8,
+                "load_suggested_kg": 65,
+                "load_type": "cable",
+                "execution_note": null,
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 90,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_07",
+                "order": 7,
+                "name": "Remada Curvada Barra",
+                "sets": 3,
+                "reps": 8,
+                "load_suggested_kg": 40,
+                "load_type": "barbell",
+                "execution_note": null,
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 90,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_08",
+                "order": 8,
+                "name": "Fly Invertido Máquina",
+                "sets": 3,
+                "reps": 12,
+                "load_suggested_kg": 50,
+                "load_type": "machine",
+                "execution_note": "Postura · saúde escapular",
+                "priority": true,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 60,
+                "timer_per_rep": false
+              }
+            ]
+          },
+          {
+            "id": "sec_core_a",
+            "title": "Core",
+            "exercises": [
+              {
+                "id": "ex_09",
+                "order": 9,
+                "name": "Oblíquo + Infra no Bosu",
+                "sets": 3,
+                "reps": 20,
+                "load_suggested_kg": null,
+                "load_type": "bodyweight",
+                "execution_note": null,
+                "priority": false,
+                "paired_with": null,
+                "load_unit": null,
+                "rest_seconds": 60,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_10",
+                "order": 10,
+                "name": "Pallof Press (anti-rotação)",
+                "sets": 3,
+                "reps": 12,
+                "load_suggested_kg": null,
+                "load_type": "cable",
+                "execution_note": "Proteção lombar no movimento de chute · cada lado",
+                "priority": true,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 60,
+                "timer_per_rep": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "prog_b",
+        "label": "B",
+        "title": "Quad · Peito · Ombros · Bíceps · Tríceps",
+        "focus": "força + hipertrofia completa",
+        "duration_min": 60,
+        "muscle_groups": ["quadríceps", "peito", "ombros", "bíceps", "tríceps", "core"],
+        "sections": [
+          {
+            "id": "sec_membros_inf",
+            "title": "Membros Inferiores",
+            "exercises": [
+              {
+                "id": "ex_b01",
+                "order": 1,
+                "name": "Agachamento (Smith / Livre)",
+                "sets": 4,
+                "reps": 6,
+                "load_suggested_kg": 50,
+                "load_type": "barbell",
+                "execution_note": "Concêntrico explosivo · base da potência de arranque",
+                "priority": true,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 120,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_b02",
+                "order": 2,
+                "name": "Leg Press 45°",
+                "sets": 3,
+                "reps": 8,
+                "load_suggested_kg": 240,
+                "load_type": "machine",
+                "execution_note": "Conjugado · sem descanso → Gêmeos no Leg Press a seguir",
+                "priority": false,
+                "paired_with": "ex_b02b",
+                "load_unit": "kg",
+                "rest_seconds": 0,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_b02b",
+                "order": "2b",
+                "name": "Gêmeos no Leg Press",
+                "sets": 3,
+                "reps": 15,
+                "load_suggested_kg": 150,
+                "load_type": "machine",
+                "execution_note": "Ponta do pé na borda · amplitude completa · sem descanso após Leg Press",
+                "priority": false,
+                "paired_with": "ex_b02",
+                "load_unit": "kg",
+                "rest_seconds": 90,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_b03",
+                "order": 3,
+                "name": "Cadeira Extensora Unilateral",
+                "sets": 3,
+                "reps": 10,
+                "load_suggested_kg": 50,
+                "load_type": "machine",
+                "execution_note": null,
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 75,
+                "timer_per_rep": false
+              }
+            ]
+          },
+          {
+            "id": "sec_peito",
+            "title": "Peito",
+            "exercises": [
+              {
+                "id": "ex_b04",
+                "order": 4,
+                "name": "Supino Reto Livre",
+                "sets": 4,
+                "reps": 6,
+                "load_suggested_kg": 45,
+                "load_type": "barbell",
+                "execution_note": null,
+                "priority": true,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 120,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_b05",
+                "order": 5,
+                "name": "Supino Inclinado Halteres",
+                "sets": 3,
+                "reps": 8,
+                "load_suggested_kg": 20,
+                "load_type": "dumbbell",
+                "execution_note": "20 kg cada",
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 90,
+                "timer_per_rep": false
+              }
+            ]
+          },
+          {
+            "id": "sec_ombros",
+            "title": "Ombros",
+            "exercises": [
+              {
+                "id": "ex_b06",
+                "order": 6,
+                "name": "Desenvolvimento Militar Halteres",
+                "sets": 3,
+                "reps": 8,
+                "load_suggested_kg": 16,
+                "load_type": "dumbbell",
+                "execution_note": "16 kg cada",
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 90,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_b07",
+                "order": 7,
+                "name": "Rotação Interna + Externa Polia",
+                "sets": 3,
+                "reps": 12,
+                "load_suggested_kg": 5,
+                "load_type": "cable",
+                "execution_note": "Saúde articular do ombro · manguito rotador · 4–6 kg",
+                "priority": true,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 60,
+                "timer_per_rep": false
+              }
+            ]
+          },
+          {
+            "id": "sec_biceps_triceps",
+            "title": "Bíceps · Tríceps",
+            "exercises": [
+              {
+                "id": "ex_b08",
+                "order": 8,
+                "name": "Rosca Direta Barra",
+                "sets": 3,
+                "reps": 8,
+                "load_suggested_kg": 27.5,
+                "load_type": "barbell",
+                "execution_note": null,
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 75,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_b09",
+                "order": 9,
+                "name": "Rosca Martelo Haltere",
+                "sets": 3,
+                "reps": 10,
+                "load_suggested_kg": 14,
+                "load_type": "dumbbell",
+                "execution_note": null,
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 75,
+                "timer_per_rep": false
+              },
+              {
+                "id": "ex_b10",
+                "order": 10,
+                "name": "Tríceps Testa Barra",
+                "sets": 3,
+                "reps": 8,
+                "load_suggested_kg": 27.5,
+                "load_type": "barbell",
+                "execution_note": null,
+                "priority": false,
+                "paired_with": null,
+                "load_unit": "kg",
+                "rest_seconds": 75,
+                "timer_per_rep": false
+              }
+            ]
+          },
+          {
+            "id": "sec_core_b",
+            "title": "Core",
+            "exercises": [
+              {
+                "id": "ex_b11",
+                "order": 11,
+                "name": "Prancha Isométrica + Abdominal Supra",
+                "sets": 3,
+                "reps": 20,
+                "load_suggested_kg": null,
+                "load_type": "bodyweight",
+                "execution_note": "3 × 45s prancha + 3 × 20 abdominal",
+                "priority": false,
+                "paired_with": null,
+                "load_unit": null,
+                "rest_seconds": 60,
+                "timer_per_rep": true,
+                "timer_seconds": 45
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
