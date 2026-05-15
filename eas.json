@@ -6,8 +6,7 @@
     "preview": {
       "distribution": "internal",
       "ios": {
-        "simulator": false,
-        "enterpriseProvisioning": "adhoc"
+        "simulator": false
       }
     },
     "preview-simulator": {
@@ -21,15 +20,6 @@
       },
       "android": {
         "buildType": "app-bundle"
-      }
-    }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
       }
     }
   }
