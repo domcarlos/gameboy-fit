@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>GameboyFit</title>
+
+<!-- PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GameboyFit">
+<meta name="theme-color" content="#050507">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+html { font-size: 16px; overscroll-behavior: none; }
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: #020204;
+  color: #fff;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  display: flex;
+  justify-content: center;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+}
+@media (min-width: 500px) { body { padding: 28px 0; background: #0a0a0c; } }
+
+.phone {
+  width: 100%;
+  max-width: 420px;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #050508 0%, #07090d 100%);
+  position: relative;
+  overflow: hidden;
+}
+@media (min-width: 500px) {
+  .phone {
+    border-radius: 38px;
+    border: 1px solid rgba(255,255,255,.06);
+    box-shadow: 0 0 100px rgba(0,255,194,.05), 0 24px 80px rgba(0,0,0,.7);
+    min-height: 900px;
+    max-height: 960px;
+    overflow-y: auto;
+  }
+}
+
+/* ============================================================
+   SCREENS — sistema de navegação
+   ============================================================ */
+.screen {
+  display: none;
+  flex-direction: column;
+  min-height: 100vh;
+  animation: screenIn .25s ease-out;
+}
+.screen.active { display: flex; }
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   SHARED COMPONENTS
+   ============================================================ */
+.mono { font-family: 'JetBrains Mono', monospace; }
+.orb  { font-family: 'Orbitron', sans-serif; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 52px 20px 0;
+  gap: 12px;
+}
+.back-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.7);
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.back-btn:active { background: rgba(255,255,255,.1); }
+.topbar-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,.6);
+}
+.spacer { flex: 1; }
+
+.brand {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+.brand em { color: #00FFC2; text-shadow: 0 0 12px rgba(0,255,194,.5); font-style: normal; }
+
+.status-pills { display: flex; align-items: center; gap: 8px; }
+.streak-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(255,138,0,.07);
+  border: 1px solid rgba(255,138,0,.25);
+  border-radius: 999px;
+  padding: 5px 10px 5px 7px;
+}
+.streak-fire { font-size: 13px; }
+.streak-n { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px; color: #FFB800; }
+.lvl-pill {
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(0,255,194,.05);
+  border: 1px solid rgba(0,255,194,.2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #00FFC2;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+.lvl-pill b { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px; }
+
+.neon { color: #00FFC2; }
+.gold { color: #FFB800; }
+.danger { color: #FF3860; }
+
+/* ============================================================
+   SCREEN 1 — HOME (cartuchos)
+   ============================================================ */
+#screen-home { padding-bottom: 40px; }
+
+.home-hero {
+  padding: 22px 20px 0;
+}
+.home-super {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  color: rgba(0,255,194,.7);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.home-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 30px;
+  letter-spacing: .5px;
+  line-height: 1;
+}
+.home-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,.4);
+  letter-spacing: 1px;
+  margin-top: 8px;
+}
+
+/* Player bar */
+.player-bar {
+  margin: 20px 20px 0;
+  background: linear-gradient(135deg, rgba(0,255,194,.06), rgba(0,255,194,.01));
+  border: 1px solid rgba(0,255,194,.15);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.p-avatar {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00FFC2, #008866);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  color: #050507;
+  flex-shrink: 0;
+}
+.p-info { flex: 1; }
+.p-name { font-size: 14px; font-weight: 700; }
+.p-level {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #00FFC2;
+  letter-spacing: .5px;
+  margin-top: 2px;
+}
+.p-streak { text-align: right; }
+.p-streak .fire { font-size: 20px; }
+.p-streak .days { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #FFB800; font-weight: 700; margin-top: 2px; }
+
+/* Cartuchos horizontal */
+.carts-section { margin-top: 24px; }
+.carts-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,.4);
+  font-weight: 700;
+  padding: 0 20px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.carts-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 20px 20px;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+.carts-row::-webkit-scrollbar { display: none; }
+
+/* =============================================
+   CARTUCHO — estilo trading card premium
+   Inspirado: EA FC / Panini / Topps Chrome
+   ============================================= */
+.cart-card {
+  flex-shrink: 0;
+  width: 210px;
+  aspect-ratio: 5/8;
+  position: relative;
+  cursor: pointer;
+  scroll-snap-align: start;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s ease;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08),
+    0 20px 50px rgba(0,0,0,.8),
+    0 0 40px rgba(0,255,194,.04);
+}
+.cart-card:hover {
+  transform: translateY(-8px) rotateY(-4deg) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(0,255,194,.4),
+    0 28px 60px rgba(0,0,0,.9),
+    0 0 80px rgba(0,255,194,.12);
+}
+.cart-card:active { transform: scale(.97); }
+
+/* Fundo base — gradiente de campo */
+.cart-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(160deg,
+      #0d1f17 0%,
+      #091510 30%,
+      #060e0a 60%,
+      #0d2218 100%
+    );
+}
+
+/* Faixa diagonal de brilho — efeito foil */
+.cart-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255,255,255,.07) 38%,
+    rgba(255,255,255,.12) 42%,
+    rgba(255,255,255,.07) 46%,
+    transparent 64%
+  );
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Borda dourada estilo card premium */
+.cart-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#0d1f17, #060e0a) padding-box,
+    linear-gradient(160deg, #FFD700 0%, #aa7800 30%, #FFD700 50%, #664400 70%, #FFD700 100%) border-box;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Linha dourada no topo */
+.cart-stripe {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #664400, #FFD700 30%, #FFE066 50%, #FFD700 70%, #664400);
+  z-index: 6;
+}
+
+/* Textura sutil de campo */
+.cart-texture {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 12px,
+      rgba(255,255,255,.015) 12px,
+      rgba(255,255,255,.015) 13px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 12px,
+      rgba(255,255,255,.015) 12px,
+      rgba(255,255,255,.015) 13px
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Glow verde ao fundo */
+.cart-glow {
+  position: absolute;
+  bottom: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(0,255,194,.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Rating top-left — número grande estilo FIFA */
+.cart-rating {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.8));
+}
+.cart-rating-num {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 36px;
+  color: #FFD700;
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(255,215,0,.6), 0 2px 4px rgba(0,0,0,.8);
+}
+.cart-rating-type {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #FFD700;
+  opacity: .8;
+  text-align: center;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+/* País / categoria top-right */
+.cart-category {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.cart-cat-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0,255,194,.3), rgba(0,255,194,.1));
+  border: 1px solid rgba(0,255,194,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.cart-cat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: rgba(0,255,194,.8);
+  font-weight: 700;
+}
+
+/* Imagem do atleta / ilustração — área central */
+.cart-image {
+  position: absolute;
+  left: 0; right: 0;
+  top: 15%;
+  bottom: 32%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 2;
+  overflow: hidden;
+}
+.cart-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+/* Placeholder quando não há imagem */
+.cart-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, transparent, rgba(0,255,194,.04));
+}
+.cart-placeholder-icon {
+  font-size: 72px;
+  opacity: .15;
+  filter: grayscale(1);
+}
+
+/* Sombra na base da imagem — integração */
+.cart-image::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 60%;
+  background: linear-gradient(to top, #060e0a 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Painel inferior — nome e stats */
+.cart-bottom-panel {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 12px 14px 14px;
+  z-index: 3;
+  background: linear-gradient(to top, rgba(6,14,10,.98) 60%, transparent);
+}
+
+.cart-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.cart-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(0,255,194,.3);
+  line-height: 1.1;
+  flex: 1;
+}
+.cart-edition-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #FFD700;
+  opacity: .8;
+}
+
+/* Linha separadora dourada */
+.cart-divider-gold {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,.4), transparent);
+  margin-bottom: 8px;
+}
+
+/* Stats — 3 colunas estilo FIFA */
+.cart-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.cart-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.cart-stat-val {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #FFD700;
+  line-height: 1;
+  text-shadow: 0 0 6px rgba(255,215,0,.4);
+}
+.cart-stat-lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,.45);
+  text-transform: uppercase;
+}
+
+.cart-author-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cart-author {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,.5);
+  letter-spacing: 1px;
+}
+.cart-rarity {
+  background: linear-gradient(135deg, #FFD700, #aa7800);
+  color: #050507;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 1.5px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-weight: 800;
+  text-shadow: none;
+}
+
+/* Cartucho pirata vazio */
+.cart-empty {
+  flex-shrink: 0;
+  width: 220px;
+  aspect-ratio: 5/8;
+  border: 1.5px dashed rgba(255,255,255,.08);
+  border-radius: 16px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: all .2s;
+}
+.cart-empty:hover { border-color: rgba(0,255,194,.3); background: rgba(0,255,194,.02); }
+.cart-empty .ce-plus { font-size: 40px; color: rgba(255,255,255,.2); font-weight: 100; }
+.cart-empty .ce-title { font-size: 13px; color: rgba(255,255,255,.5); font-weight: 500; }
+.cart-empty .ce-sub { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,.3); letter-spacing: .5px; text-align: center; padding: 0 16px; }
+
+/* Home stats */
+.home-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0 20px;
+}
+.hs { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.04); border-radius: 14px; padding: 14px 12px; }
+.hs-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: rgba(255,255,255,.4); }
+.hs-val { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 22px; color: #fff; margin-top: 4px; letter-spacing: -.5px; }
+.hs-trend { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #00FFC2; margin-top: 2px; }
+
+/* ============================================================
+   SCREEN 2 — PROGRAMS (fichas do cartucho)
+   ============================================================ */
+#screen-programs { padding-bottom: 40px; }
+
+.prog-hero { padding: 20px 20px 0; }
+.prog-super { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 2.5px; color: rgba(0,255,194,.7); font-weight: 700; }
+.prog-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: .5px; line-height: 1; margin-top: 4px; }
+.prog-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,.4); letter-spacing: .5px; margin-top: 8px; }
+
+.prog-list { padding: 24px 20px 0; display: flex; flex-direction: column; gap: 12px; }
+
+.prog-card {
+  background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 20px;
+  padding: 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: all .2s;
+}
+.prog-card:hover { border-color: rgba(0,255,194,.3); box-shadow: 0 0 30px rgba(0,255,194,.06); }
+.prog-card:active { transform: scale(.99); }
+.prog-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, #00FFC2, transparent); border-radius: 2px; }
+
+.pc-top { display: flex; align-items: center; gap: 14px; }
+.pc-letter {
+  width: 52px; height: 52px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(0,255,194,.15), rgba(0,255,194,.02));
+  border: 1px solid rgba(0,255,194,.35);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 26px;
+  color: #00FFC2;
+  text-shadow: 0 0 10px rgba(0,255,194,.5);
+}
+.pc-info { flex: 1; }
+.pc-title { font-size: 16px; font-weight: 700; color: #fff; }
+.pc-focus { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.45); letter-spacing: .5px; margin-top: 4px; }
+.pc-arrow { font-size: 22px; color: rgba(255,255,255,.25); }
+
+.pc-muscles { display: flex; flex-wrap: wrap; gap: 6px; }
+.muscle-tag { background: rgba(255,255,255,.04); color: rgba(255,255,255,.55); padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+
+.pc-stats { display: flex; gap: 24px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.05); }
+.pc-stat { display: flex; flex-direction: column; gap: 3px; }
+.pc-stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1px; color: rgba(255,255,255,.4); }
+.pc-stat-val { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 16px; color: #fff; }
+
+/* ============================================================
+   SCREEN 3 — WORKOUT v6: painel fixo + lista scrollável
+   ============================================================ */
+#screen-workout {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+#screen-workout.active { display: flex; }
+@media (min-width: 500px) { #screen-workout { height: 960px; } }
+
+/* PAINEL FIXO (topo) */
+.wk-panel {
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #050508, #07090c);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  z-index: 10;
+}
+
+.wk-topbar {
+  padding: 50px 20px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wk-close {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  color: rgba(255,255,255,.6);
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.wk-timer-block { text-align: center; }
+.wk-timer { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 22px; color: #fff; letter-spacing: 2px; }
+.wk-timer.live { color: #00FFC2; text-shadow: 0 0 12px rgba(0,255,194,.4); }
+.wk-timer-lbl { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 2px; color: rgba(255,255,255,.4); margin-top: 2px; }
+.wk-pause { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.7); font-size: 13px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.wk-pause.paused { background: rgba(255,184,0,.1); border-color: rgba(255,184,0,.4); color: #FFB800; }
+
+/* Progresso */
+.wk-progress { padding: 0 20px 14px; display: flex; align-items: center; gap: 10px; }
+.wk-prog-txt { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: rgba(255,255,255,.4); min-width: 40px; }
+.wk-prog-track { flex: 1; height: 3px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; }
+.wk-prog-fill { height: 100%; background: linear-gradient(90deg, #00FFC2, #00ccaa); border-radius: 2px; box-shadow: 0 0 6px rgba(0,255,194,.5); transition: width .6s ease; }
+
+/* EXERCÍCIO ATIVO — card no painel */
+.wk-active-card {
+  margin: 0 16px 14px;
+  background: radial-gradient(circle at top left, rgba(0,255,194,.07), transparent 55%),
+              linear-gradient(180deg, #0a0c10, #07090c);
+  border: 1.5px solid rgba(0,255,194,.4);
+  border-radius: 20px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0,255,194,.06);
+}
+.wk-active-card::before { content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg, transparent, #00FFC2, transparent); }
+
+.wk-ex-num-abs { position: absolute; top: 12px; right: 14px; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; color: rgba(0,255,194,.3); }
+.wk-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; background: rgba(255,184,0,.1); border: 1px solid rgba(255,184,0,.4); color: #FFB800; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 10px; }
+.wk-tag.hidden { display: none; }
+
+.wk-hero { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+.wk-thumb { width: 80px; height: 90px; border-radius: 12px; background: linear-gradient(180deg, #0a1612, #050a08); border: 1px solid rgba(0,255,194,.15); position: relative; overflow: hidden; cursor: pointer; flex-shrink: 0; }
+.wk-thumb::after { content: '⤢'; position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; background: rgba(0,0,0,.7); color: #00FFC2; display: flex; align-items: center; justify-content: center; font-size: 9px; border-radius: 3px; }
+.wk-thumb svg { width: 100%; height: 100%; }
+.wk-name-block { flex: 1; padding-top: 2px; }
+.wk-exname { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: .5px; line-height: 1.05; }
+.wk-exdesc { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.45); letter-spacing: .5px; margin-top: 8px; line-height: 1.5; }
+
+/* Stats compactos */
+.wk-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.wk-stat { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.04); border-radius: 12px; padding: 10px 8px; text-align: center; }
+.wk-stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 1.5px; color: rgba(255,255,255,.45); }
+.wk-stat-val { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 22px; color: #fff; line-height: 1; margin-top: 4px; }
+.wk-stat-val span { font-size: 11px; color: rgba(255,255,255,.4); font-weight: 500; }
+
+/* Série */
+.wk-series { margin-bottom: 12px; }
+.wk-series-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.wk-series-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: rgba(255,255,255,.4); }
+.wk-series-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #00FFC2; font-weight: 700; }
+.wk-series-bars { display: flex; gap: 5px; }
+.wk-bar { flex: 1; height: 7px; border-radius: 4px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.04); }
+.wk-bar.done { background: rgba(0,255,194,.35); border: none; }
+.wk-bar.active { background: linear-gradient(90deg, #00FFC2, #00ccaa); border: none; box-shadow: 0 0 8px rgba(0,255,194,.5); animation: barPulse 1.5s ease-in-out infinite; }
+@keyframes barPulse { 0%,100%{opacity:1} 50%{opacity:.65} }
+
+/* CARGA compacta */
+.wk-load { background: linear-gradient(180deg, rgba(255,184,0,.06), rgba(255,184,0,.01)); border: 1.5px solid rgba(255,184,0,.35); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; position: relative; }
+.wk-load::before { content: 'CARGA'; position: absolute; top: -7px; left: 12px; background: #07090c; padding: 0 6px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; color: #FFB800; font-weight: 700; }
+.wk-load-head { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.wk-load-last { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.45); }
+.wk-load-last b { color: #00FFC2; font-weight: 700; }
+.wk-load-ctrl { display: grid; grid-template-columns: 50px 1fr 50px; gap: 8px; align-items: stretch; }
+.wk-adj { height: 52px; border-radius: 10px; background: rgba(255,184,0,.07); border: 1.5px solid rgba(255,184,0,.3); color: #FFB800; font-size: 24px; font-weight: 700; cursor: pointer; transition: all .12s; }
+.wk-adj:active { background: rgba(255,184,0,.2); transform: scale(.95); }
+.wk-load-display { background: rgba(0,0,0,.4); border: 1px solid rgba(255,184,0,.35); border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.wk-load-val { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 30px; color: #FFB800; text-shadow: 0 0 14px rgba(255,184,0,.5); line-height: 1; }
+.wk-load-unit { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(255,184,0,.6); font-weight: 600; }
+
+/* CTA */
+.wk-cta-idle { display: flex; background: linear-gradient(135deg, #00FFC2, #00D9A7); color: #04110d; border-radius: 14px; padding: 14px 18px; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: 0 8px 24px rgba(0,255,194,.2); transition: all .15s; }
+.wk-cta-idle:active { transform: scale(.98); }
+.wk-cta-left { display: flex; flex-direction: column; gap: 2px; }
+.wk-cta-mini { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 2px; opacity: .75; font-weight: 600; }
+.wk-cta-big { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px; letter-spacing: .5px; }
+.wk-cta-icon { width: 38px; height: 38px; border-radius: 50%; background: rgba(4,17,13,.15); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+
+.wk-timer-mode { display: none; background: #080e0e; border: 1.5px solid rgba(0,255,194,.4); border-radius: 14px; padding: 14px 16px; position: relative; overflow: hidden; }
+.wk-timer-mode::before { content: ''; position: absolute; inset: 8px; border-radius: 10px; border: 1px solid rgba(0,255,194,.12); animation: ring 2s ease-out infinite; pointer-events: none; }
+@keyframes ring { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(1.03);opacity:0} }
+.wk-timer-mode.show { display: block; }
+.wk-t-status { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 3px; color: rgba(0,255,194,.8); font-weight: 700; text-align: center; }
+.wk-t-status.paused { color: #FFB800; }
+.wk-t-val { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 48px; color: #00FFC2; text-shadow: 0 0 24px rgba(0,255,194,.5); letter-spacing: 3px; line-height: 1; text-align: center; margin: 6px 0 12px; }
+.wk-t-val.paused { color: #FFB800; text-shadow: 0 0 24px rgba(255,184,0,.5); }
+.wk-t-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wk-t-btn { padding: 12px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1.5px solid rgba(255,255,255,.07); color: #fff; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 1.5px; cursor: pointer; transition: all .12s; }
+.wk-t-btn:active { transform: scale(.97); }
+.wk-t-btn.finish { background: rgba(255,56,96,.08); border-color: rgba(255,56,96,.35); color: #FF3860; }
+
+/* DESCANSO — overlay no painel */
+.wk-rest-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(5,5,8,.96);
+  z-index: 20;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 20px;
+}
+.wk-rest-overlay.show { display: flex; }
+.wk-rest-lbl { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 3px; color: rgba(77,158,255,.9); font-weight: 700; }
+.wk-rest-timer { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 64px; color: #4D9EFF; text-shadow: 0 0 30px rgba(77,158,255,.5); letter-spacing: 3px; line-height: 1; }
+.wk-rest-next { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: 1px; }
+.wk-rest-next b { color: rgba(255,255,255,.7); }
+.wk-skip { display: inline-block; margin-top: 8px; padding: 10px 20px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.5); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; cursor: pointer; }
+
+/* LISTA DE EXERCÍCIOS — área scrollável */
+.wk-list-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 80px;
+}
+.wk-list-head {
+  padding: 14px 20px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,.4);
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+}
+.wk-list-head span { color: rgba(0,255,194,.6); }
+
+/* Item da lista */
+.wk-ex-item {
+  margin: 0 16px 8px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+  border: 1px solid transparent;
+}
+.wk-ex-item:active { transform: scale(.99); }
+
+/* Estados da lista */
+.wk-ex-item.state-pending {
+  background: rgba(255,255,255,.02);
+  border-color: rgba(255,255,255,.04);
+}
+.wk-ex-item.state-pending:hover {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.1);
+}
+.wk-ex-item.state-active {
+  background: radial-gradient(circle at left, rgba(0,255,194,.08), transparent 70%),
+              linear-gradient(90deg, rgba(0,255,194,.04), transparent);
+  border-color: rgba(0,255,194,.4);
+  box-shadow: 0 0 20px rgba(0,255,194,.06);
+}
+.wk-ex-item.state-done {
+  background: rgba(0,255,194,.02);
+  border-color: rgba(0,255,194,.1);
+  opacity: .6;
+}
+
+.wk-item-num {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  color: rgba(255,255,255,.3);
+  min-width: 28px;
+  text-align: center;
+}
+.wk-ex-item.state-active .wk-item-num { color: #00FFC2; }
+.wk-ex-item.state-done .wk-item-num { color: rgba(0,255,194,.5); }
+
+.wk-item-thumb {
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0a1410, #050907);
+  border: 1px solid rgba(0,255,194,.1);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.wk-item-thumb svg { width: 100%; height: 100%; }
+.wk-ex-item.state-done .wk-item-thumb { border-color: rgba(0,255,194,.2); }
+
+.wk-item-info { flex: 1; min-width: 0; }
+.wk-item-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wk-ex-item.state-done .wk-item-name { color: rgba(255,255,255,.6); }
+.wk-item-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.35); margin-top: 3px; letter-spacing: .5px; }
+
+.wk-item-status {
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-align: right;
+}
+.wk-item-status .series-pills { display: flex; gap: 3px; margin-bottom: 4px; justify-content: flex-end; }
+.wk-item-status .sp { width: 8px; height: 8px; border-radius: 2px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); }
+.wk-item-status .sp.done { background: rgba(0,255,194,.35); border: none; }
+.wk-item-status .sp.active { background: #00FFC2; border: none; box-shadow: 0 0 6px rgba(0,255,194,.5); }
+.wk-item-done-check { color: #00FFC2; font-size: 14px; font-weight: 700; }
+.wk-item-tap { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(0,255,194,.6); letter-spacing: 1px; }
+
+/* Foco badge na lista */
+.wk-item-foco {
+  position: absolute;
+  top: 8px; right: 12px;
+  background: rgba(255,184,0,.1);
+  border: 1px solid rgba(255,184,0,.3);
+  color: #FFB800;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+/* Sem next preview separado — está na lista */
+.wk-next { display: none; }
+
+/* ============================================================
+   SCREEN 4 — REPORT (relatório final)
+   ============================================================ */
+#screen-report { padding-bottom: 40px; }
+
+.rp-content { padding: 50px 20px 0; display: flex; flex-direction: column; gap: 16px; }
+
+.rp-hero { text-align: center; padding-bottom: 8px; }
+.rp-trophy {
+  width: 100px; height: 100px;
+  margin: 0 auto 16px;
+  position: relative;
+}
+.rp-trophy svg { width: 100%; height: 100%; filter: drop-shadow(0 0 28px rgba(255,184,0,.5)); }
+.rp-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 28px; letter-spacing: .5px; }
+.rp-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: 1px; margin-top: 8px; }
+
+/* XP bar */
+.rp-xp {
+  background: linear-gradient(135deg, rgba(0,255,194,.07), rgba(0,255,194,.02));
+  border: 1px solid rgba(0,255,194,.2);
+  border-radius: 16px;
+  padding: 16px;
+}
+.rp-xp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.rp-lvl { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px; color: #00FFC2; }
+.rp-xp-gained {
+  background: #00FFC2;
+  color: #050507;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: .5px;
+  animation: xpPop .8s ease-out;
+}
+@keyframes xpPop { 0%{transform:scale(.5);opacity:0} 60%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+.rp-xp-bar { height: 6px; background: rgba(255,255,255,.06); border-radius: 3px; overflow: hidden; }
+.rp-xp-fill { height: 100%; background: linear-gradient(90deg, #00FFC2, #FFB800); border-radius: 3px; width: 0%; animation: xpGrow 1.2s ease-out .2s forwards; box-shadow: 0 0 8px rgba(0,255,194,.5); }
+@keyframes xpGrow { to { width: 72%; } }
+.rp-xp-meta { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,.4); letter-spacing: .5px; margin-top: 6px; }
+
+/* Achievement */
+.rp-achievement {
+  background: linear-gradient(135deg, rgba(255,184,0,.1), rgba(255,184,0,.02));
+  border: 1px solid rgba(255,184,0,.3);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.rp-ach-icon { width: 50px; height: 50px; border-radius: 13px; background: linear-gradient(135deg, #FFB800, #886000); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 0 20px rgba(255,184,0,.4); flex-shrink: 0; }
+.rp-ach-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: #FFB800; font-weight: 700; }
+.rp-ach-name { font-size: 15px; font-weight: 700; margin-top: 2px; }
+.rp-ach-desc { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.4); margin-top: 2px; }
+
+/* Boss */
+.rp-boss {
+  background: linear-gradient(180deg, rgba(255,56,96,.06), rgba(255,56,96,.02));
+  border: 1px solid rgba(255,56,96,.2);
+  border-radius: 16px;
+  padding: 16px;
+  position: relative;
+}
+.rp-boss::after { content: 'BOSS'; position: absolute; top: 12px; right: 14px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px; color: rgba(255,56,96,.6); font-weight: 800; }
+.rp-boss-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: rgba(255,56,96,.8); margin-bottom: 6px; }
+.rp-boss-name { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 18px; letter-spacing: .5px; }
+.rp-boss-stats { display: flex; gap: 20px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,56,96,.12); }
+.rp-bstat { display: flex; flex-direction: column; gap: 3px; }
+.rp-bstat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,.4); letter-spacing: .5px; }
+.rp-bstat-val { font-weight: 700; font-size: 15px; }
+.rp-defeated { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #00FFC2; font-weight: 600; letter-spacing: 1px; margin-top: 10px; }
+
+/* Main stats */
+.rp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rp-stat {
+  background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 14px;
+  padding: 14px;
+}
+.rp-stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: rgba(255,255,255,.45); }
+.rp-stat-val { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 28px; margin-top: 5px; letter-spacing: -.5px; }
+.rp-stat-val span { font-size: 13px; color: rgba(255,255,255,.35); font-weight: 500; margin-left: 3px; }
+.rp-stat-trend { font-family: 'JetBrains Mono', monospace; font-size: 10px; margin-top: 2px; }
+.rp-stat-trend.up { color: #00FFC2; }
+.rp-stat-trend.up::before { content: '▲ '; }
+.rp-stat-trend.down { color: #ff6b6b; }
+.rp-stat-trend.down::before { content: '▼ '; }
+.rp-stat-trend.neutral { color: rgba(255,255,255,.4); }
+
+/* Evolução */
+.rp-section { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.04); border-radius: 14px; padding: 16px; }
+.rp-sect-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: rgba(255,255,255,.4); margin-bottom: 14px; }
+.evo-list { display: flex; flex-direction: column; gap: 10px; }
+.evo-row { display: flex; align-items: center; gap: 10px; }
+.evo-name { flex: 1; font-size: 13px; color: rgba(255,255,255,.8); font-weight: 500; }
+.evo-prev { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,.4); }
+.evo-arrow { color: rgba(255,255,255,.3); font-size: 11px; }
+.evo-now { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #00FFC2; font-weight: 700; min-width: 50px; text-align: right; }
+.evo-now.down { color: #ff6b6b; }
+.evo-delta { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 700; min-width: 38px; text-align: center; }
+.evo-delta.up { background: rgba(0,255,194,.1); color: #00FFC2; }
+.evo-delta.flat { background: rgba(255,255,255,.04); color: rgba(255,255,255,.4); }
+.evo-delta.down { background: rgba(255,107,107,.1); color: #ff6b6b; }
+
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #00FFC2, #00D9A7);
+  color: #04110d;
+  border: none;
+  padding: 18px;
+  border-radius: 16px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0,255,194,.2);
+  transition: all .15s;
+}
+.btn-primary:active { transform: scale(.98); }
+.btn-secondary {
+  width: 100%;
+  background: transparent;
+  color: rgba(255,255,255,.5);
+  border: 1px solid rgba(255,255,255,.1);
+  padding: 14px;
+  border-radius: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-secondary:active { transform: scale(.98); }
+
+/* ============================================================
+   BOTTOM NAV
+   ============================================================ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(5,5,8,.96);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0,255,194,.1);
+  padding: 13px 16px 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 420px;
+  margin: 0 auto;
+  z-index: 50;
+}
+@media (min-width: 500px) { .bottom-nav { position: absolute; border-radius: 0 0 38px 38px; } }
+.nav-item {
+  padding: 13px 8px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.04);
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  color: rgba(255,255,255,.4);
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  transition: all .15s;
+}
+.nav-item.active { background: rgba(0,255,194,.08); border-color: rgba(0,255,194,.3); color: #00FFC2; }
+.nav-item .nav-ico { font-size: 16px; }
+
+/* ============================================================
+   BOTTOM SHEET (detalhe exercício)
+   ============================================================ */
+.sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.85); backdrop-filter: blur(10px); z-index: 100; opacity: 0; pointer-events: none; transition: opacity .3s; }
+.sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+.sheet { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%); width: 100%; max-width: 420px; max-height: 90vh; background: linear-gradient(180deg, #0a1212, #050707); border-radius: 28px 28px 0 0; z-index: 101; transition: transform .35s cubic-bezier(.32,.72,0,1); overflow-y: auto; border-top: 1px solid rgba(0,255,194,.3); }
+.sheet.open { transform: translateX(-50%) translateY(0); }
+.sheet-handle { width: 40px; height: 4px; background: rgba(0,255,194,.3); border-radius: 2px; margin: 12px auto 8px; }
+.sheet-content { padding: 8px 20px 60px; }
+.sheet-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 24px; letter-spacing: .5px; }
+.sheet-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: 1px; margin-top: 6px; }
+.sheet-sb-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px; color: #00FFC2; font-weight: 700; margin: 24px 0 12px; }
+.storyboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sb-frame { aspect-ratio: 4/5; background: linear-gradient(180deg, #0a1410, #050907); border: 1px solid rgba(0,255,194,.2); border-radius: 12px; position: relative; overflow: hidden; }
+.sb-num { position: absolute; top: 8px; left: 10px; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 16px; color: #00FFC2; z-index: 2; }
+.sb-lbl { position: absolute; bottom: 8px; left: 10px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: rgba(0,255,194,.8); z-index: 2; }
+.sb-frame svg { width: 100%; height: 100%; }
+.sheet-checklist { display: flex; flex-direction: column; gap: 8px; }
+.sheet-check { display: flex; gap: 12px; padding: 14px; background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.05); border-radius: 12px; font-size: 13px; color: rgba(255,255,255,.85); line-height: 1.5; }
+.check-n { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; border: 1.5px solid #00FFC2; background: rgba(0,255,194,.1); display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700; color: #00FFC2; }
+.check-warn { border-color: #FFB800; background: rgba(255,184,0,.1); color: #FFB800; }
+/* ============================================================
+   SCREEN 5 — HISTORY
+   ============================================================ */
+#screen-history { padding-bottom: 100px; }
+.hist-content { padding: 52px 20px 0; }
+.hist-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: .5px; }
+.hist-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,.4); letter-spacing: 1px; margin-top: 6px; }
+
+.hist-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 20px 0 24px;
+}
+.hist-sum-item { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.04); border-radius: 14px; padding: 14px 10px; text-align: center; }
+.hist-sum-val { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 22px; color: #fff; }
+.hist-sum-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1px; color: rgba(255,255,255,.4); margin-top: 4px; }
+
+.hist-section-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 2px; color: rgba(255,255,255,.4); font-weight: 700; margin-bottom: 12px; }
+
+.hist-item {
+  background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.hist-item:hover { border-color: rgba(0,255,194,.2); }
+.hist-item:active { transform: scale(.99); }
+
+.hist-item-left { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 44px; }
+.hist-item-letter { width: 44px; height: 44px; border-radius: 11px; background: linear-gradient(135deg, rgba(0,255,194,.15), rgba(0,255,194,.02)); border: 1px solid rgba(0,255,194,.3); display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 20px; color: #00FFC2; }
+.hist-item-date { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: rgba(255,255,255,.35); letter-spacing: .5px; text-align: center; }
+
+.hist-item-info { flex: 1; min-width: 0; }
+.hist-item-name { font-size: 14px; font-weight: 600; color: #fff; }
+.hist-item-cart { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(0,255,194,.6); letter-spacing: .5px; margin-top: 2px; }
+.hist-item-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.35); margin-top: 4px; }
+
+.hist-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.hist-item-duration { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 14px; color: #fff; }
+.hist-item-vol { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(0,255,194,.7); letter-spacing: .5px; }
+.hist-item-pr { background: rgba(255,56,96,.1); border: 1px solid rgba(255,56,96,.3); color: #FF3860; font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
+
+.hist-empty { text-align: center; padding: 60px 20px; }
+.hist-empty-icon { font-size: 48px; opacity: .3; margin-bottom: 16px; }
+.hist-empty-title { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 16px; color: rgba(255,255,255,.5); }
+.hist-empty-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,.3); margin-top: 8px; letter-spacing: .5px; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- ======================================================
+     SCREEN 1: HOME — cartuchos
+     ====================================================== -->
+<div class="screen active" id="screen-home">
+
+  <!-- PLAYER CARD — aparece uma vez só, integra marca + info do atleta -->
+  <div style="padding: 52px 20px 0;">
+    <div style="
+      background: linear-gradient(135deg, rgba(0,255,194,.06) 0%, rgba(0,255,194,.01) 50%, rgba(0,0,0,0) 100%),
+                  linear-gradient(180deg, #0d1f17, #080e0b);
+      border: 1px solid rgba(0,255,194,.2);
+      border-radius: 20px;
+      padding: 18px 18px 16px;
+      position: relative;
+      overflow: hidden;
+    ">
+      <!-- Linha dourada topo -->
+      <div style="position:absolute;top:0;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,#00FFC2,transparent);"></div>
+
+      <!-- Linha 1: marca + streak + level -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="brand" style="font-size:18px;">GAMEBOY<em> FIT</em></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="streak-pill"><span class="streak-fire">🔥</span><span class="streak-n">9</span></div>
+          <div class="lvl-pill">LVL <b>27</b></div>
+        </div>
+      </div>
+
+      <!-- Linha 2: avatar + info + xp bar -->
+      <div style="display:flex;align-items:center;gap:14px;">
+
+        <!-- Avatar hexagonal -->
+        <div style="
+          width: 54px; height: 54px;
+          border-radius: 14px;
+          background: linear-gradient(135deg, #00FFC2, #008866);
+          display: flex; align-items: center; justify-content: center;
+          font-family: 'Orbitron', sans-serif;
+          font-weight: 900; font-size: 20px;
+          color: #050507;
+          flex-shrink: 0;
+          box-shadow: 0 0 20px rgba(0,255,194,.3);
+        ">DC</div>
+
+        <div style="flex:1;min-width:0;">
+          <!-- Nome + título -->
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:700;color:#fff;">Carlos Alves</span>
+            <span style="
+              font-family:'JetBrains Mono',monospace;
+              font-size:9px;letter-spacing:1.5px;
+              background:rgba(0,255,194,.1);
+              border:1px solid rgba(0,255,194,.3);
+              color:#00FFC2;
+              padding:2px 7px;border-radius:3px;
+              font-weight:700;
+            ">ATLETA</span>
+          </div>
+
+          <!-- XP bar -->
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:70%;background:linear-gradient(90deg,#00FFC2,#FFB800);border-radius:3px;box-shadow:0 0 6px rgba(0,255,194,.5);"></div>
+            </div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);white-space:nowrap;">12.560 / 18.000 XP</span>
+          </div>
+
+          <!-- Stats inline -->
+          <div style="display:flex;gap:16px;margin-top:8px;">
+            <div>
+              <span style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;color:#fff;">9</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);margin-left:3px;letter-spacing:.5px;">TREINOS</span>
+            </div>
+            <div>
+              <span style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;color:#fff;">42<span style="font-size:10px;color:rgba(255,255,255,.4);">t</span></span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);margin-left:3px;letter-spacing:.5px;">VOLUME</span>
+            </div>
+            <div>
+              <span style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;color:#fff;">3</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);margin-left:3px;letter-spacing:.5px;">SEM 3/8</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="carts-section" style="margin-top:20px;">
+    <div class="carts-label">
+      <span>CARTUCHOS</span>
+      <span style="color:rgba(0,255,194,.6); font-size:10px; cursor:pointer;">VER LOJA →</span>
+    </div>
+    <div class="carts-row">
+
+      <!-- Cartucho Elite Futebol — estilo EA FC -->
+      <div class="cart-card" onclick="selectCartridge('elite-futebol', 'ELITE FUTEBOL', 'Paulo Paulada', 2, 8)">
+        <div class="cart-bg"></div>
+        <div class="cart-texture"></div>
+        <div class="cart-glow"></div>
+        <div class="cart-shine"></div>
+        <div class="cart-stripe"></div>
+
+        <!-- Rating top-left -->
+        <div class="cart-rating">
+          <div class="cart-rating-num">88</div>
+          <div class="cart-rating-type">ATK</div>
+        </div>
+
+        <!-- Categoria top-right -->
+        <div class="cart-category">
+          <div class="cart-cat-icon">⚽</div>
+          <div class="cart-cat-label">ELITE</div>
+        </div>
+
+        <!-- Imagem placeholder -->
+        <div class="cart-image">
+          <div class="cart-image-placeholder">
+            <div class="cart-placeholder-icon">🏃</div>
+          </div>
+        </div>
+
+        <!-- Painel inferior -->
+        <div class="cart-bottom-panel">
+          <div class="cart-name-row">
+            <div class="cart-name">ELITE FUTEBOL</div>
+            <div class="cart-edition-badge">#001</div>
+          </div>
+          <div class="cart-divider-gold"></div>
+          <div class="cart-stats-grid">
+            <div class="cart-stat-item">
+              <div class="cart-stat-val">2</div>
+              <div class="cart-stat-lbl">fichas</div>
+            </div>
+            <div class="cart-stat-item">
+              <div class="cart-stat-val">8</div>
+              <div class="cart-stat-lbl">semanas</div>
+            </div>
+            <div class="cart-stat-item">
+              <div class="cart-stat-val">3x</div>
+              <div class="cart-stat-lbl">semana</div>
+            </div>
+          </div>
+          <div class="cart-author-row">
+            <div class="cart-author">PAULO PAULADA</div>
+            <div class="cart-rarity">★ ÉPICO</div>
+          </div>
+        </div>
+
+        <div class="cart-border"></div>
+      </div>
+
+      <!-- Cartucho Vazio -->
+      <div class="cart-empty">
+        <div class="ce-plus">+</div>
+        <div class="ce-title">Cartucho pirata</div>
+        <div class="ce-sub">R$ 1,99 · upload de treino customizado</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-stats">
+    <div class="hs"><div class="hs-lbl">SEMANA</div><div class="hs-val">3<span style="font-size:12px;color:rgba(255,255,255,.4)">/8</span></div><div class="hs-trend">no ritmo</div></div>
+    <div class="hs"><div class="hs-lbl">TREINOS</div><div class="hs-val">9</div><div class="hs-trend">+2 sem.</div></div>
+    <div class="hs"><div class="hs-lbl">VOLUME</div><div class="hs-val">42<span style="font-size:12px;color:rgba(255,255,255,.4)">t</span></div><div class="hs-trend">+12%</div></div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="goHome()"><span class="nav-ico">⬚</span>CARTUCHOS</div>
+    <div class="nav-item" onclick="openHistory()"><span class="nav-ico">📋</span>HISTÓRICO</div>
+    <div class="nav-item"><span class="nav-ico">⚙</span>CONFIG</div>
+  </div>
+</div>
+
+<!-- ======================================================
+     SCREEN 2: PROGRAMS — fichas do cartucho
+     ====================================================== -->
+<div class="screen" id="screen-programs">
+  <div class="topbar">
+    <div class="back-btn" onclick="goTo('home')">‹</div>
+    <div class="topbar-title" id="prog-cart-label">ELITE FUTEBOL</div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="prog-hero">
+    <div class="prog-super" id="prog-super">ELITE FUTEBOL</div>
+    <div class="prog-title">Futebol de Elite</div>
+    <div class="prog-sub">Paulo Paulada · 3x por semana · 8 semanas</div>
+  </div>
+
+  <div class="prog-list">
+    <div class="prog-card" onclick="selectProgram('A','Posterior · Glúteo · Costas','foco futebol + hipertrofia',10,55,'Posterior, Glúteo, Costas, Core')">
+      <div class="pc-top">
+        <div class="pc-letter">A</div>
+        <div class="pc-info">
+          <div class="pc-title">Posterior · Glúteo · Costas</div>
+          <div class="pc-focus">foco futebol + hipertrofia</div>
+        </div>
+        <div class="pc-arrow">→</div>
+      </div>
+      <div class="pc-muscles">
+        <span class="muscle-tag">glúteo</span>
+        <span class="muscle-tag">posterior</span>
+        <span class="muscle-tag">costas</span>
+        <span class="muscle-tag">core</span>
+      </div>
+      <div class="pc-stats">
+        <div class="pc-stat"><div class="pc-stat-lbl">EXERCÍCIOS</div><div class="pc-stat-val">10</div></div>
+        <div class="pc-stat"><div class="pc-stat-lbl">DURAÇÃO</div><div class="pc-stat-val">~55min</div></div>
+        <div class="pc-stat"><div class="pc-stat-lbl">VOLUME EST.</div><div class="pc-stat-val">8.5t</div></div>
+      </div>
+    </div>
+
+    <div class="prog-card" onclick="selectProgram('B','Quad · Peito · Ombros · Braços','força + hipertrofia completa',11,60,'Quad, Peito, Ombros, Braços')">
+      <div class="pc-top">
+        <div class="pc-letter">B</div>
+        <div class="pc-info">
+          <div class="pc-title">Quad · Peito · Ombros · Braços</div>
+          <div class="pc-focus">força + hipertrofia completa</div>
+        </div>
+        <div class="pc-arrow">→</div>
+      </div>
+      <div class="pc-muscles">
+        <span class="muscle-tag">quadríceps</span>
+        <span class="muscle-tag">peito</span>
+        <span class="muscle-tag">ombros</span>
+        <span class="muscle-tag">braços</span>
+      </div>
+      <div class="pc-stats">
+        <div class="pc-stat"><div class="pc-stat-lbl">EXERCÍCIOS</div><div class="pc-stat-val">11</div></div>
+        <div class="pc-stat"><div class="pc-stat-lbl">DURAÇÃO</div><div class="pc-stat-val">~60min</div></div>
+        <div class="pc-stat"><div class="pc-stat-lbl">VOLUME EST.</div><div class="pc-stat-val">12.3t</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     SCREEN 3: WORKOUT — cockpit v6
+     ====================================================== -->
+<div class="screen" id="screen-workout">
+
+  <!-- PAINEL FIXO -->
+  <div class="wk-panel" style="position:relative;">
+
+    <!-- Overlay de descanso (sobre o painel) -->
+    <div class="wk-rest-overlay" id="wk-rest">
+      <div class="wk-rest-lbl">DESCANSO</div>
+      <div class="wk-rest-timer" id="wk-rest-timer">90</div>
+      <div class="wk-rest-next">A SEGUIR: <b id="wk-rest-next-name">—</b></div>
+      <div class="wk-skip" onclick="skipRest()">PULAR DESCANSO →</div>
+    </div>
+
+    <div class="wk-topbar">
+      <div class="wk-close" onclick="confirmExit()">✕</div>
+      <div class="wk-timer-block">
+        <div class="wk-timer live" id="wk-total-timer">00:00</div>
+        <div class="wk-timer-lbl">TEMPO TOTAL</div>
+      </div>
+      <div class="wk-pause" id="wk-pause-btn" onclick="toggleGlobalPause()">⏸</div>
+    </div>
+
+    <div class="wk-progress">
+      <span class="wk-prog-txt" id="wk-prog-txt">1/10</span>
+      <div class="wk-prog-track"><div class="wk-prog-fill" id="wk-prog-fill" style="width:10%"></div></div>
+    </div>
+
+    <!-- Exercício ativo -->
+    <div class="wk-active-card">
+      <div class="wk-ex-num-abs" id="wk-ex-num">01</div>
+      <div class="wk-tag" id="wk-foco-tag">★ FOCO</div>
+
+      <div class="wk-hero">
+        <div class="wk-thumb" onclick="openSheet()">
+          <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="98" width="100" height="2" fill="#1a1a1a" opacity=".5"/>
+            <rect x="15" y="62" width="35" height="18" rx="2" fill="#1a1a1a"/>
+            <rect x="27" y="80" width="9" height="22" fill="#1a1a1a"/>
+            <rect x="5" y="50" width="90" height="3" rx="1" fill="#2a2a2a"/>
+            <ellipse cx="12" cy="52" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+            <ellipse cx="88" cy="52" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+            <ellipse cx="38" cy="48" rx="7" ry="5" fill="#d8d8d8"/>
+            <path d="M 28 60 Q 55 45 70 55 L 75 65 Q 50 65 28 70 Z" fill="#d8d8d8"/>
+            <rect x="60" y="55" width="22" height="14" rx="3" fill="#d8d8d8"/>
+            <circle cx="82" cy="68" r="7" fill="#00FFC2" opacity=".5"/>
+            <circle cx="82" cy="68" r="4" fill="#d8d8d8"/>
+            <rect x="77" y="68" width="8" height="30" rx="3" fill="#d8d8d8"/>
+          </svg>
+        </div>
+        <div class="wk-name-block">
+          <div class="wk-exname" id="wk-exname">HIP THRUST BARRA</div>
+          <div class="wk-exdesc" id="wk-exdesc">GLÚTEO MÁXIMO · POSTERIOR · CORE</div>
+        </div>
+      </div>
+
+      <div class="wk-stats">
+        <div class="wk-stat"><div class="wk-stat-lbl">SÉRIES</div><div class="wk-stat-val" id="wk-sets">4</div></div>
+        <div class="wk-stat"><div class="wk-stat-lbl">REPS</div><div class="wk-stat-val" id="wk-reps">8</div></div>
+        <div class="wk-stat"><div class="wk-stat-lbl">DESCANSO</div><div class="wk-stat-val" id="wk-rest-val">90<span>s</span></div></div>
+      </div>
+
+      <div class="wk-series">
+        <div class="wk-series-row">
+          <span class="wk-series-lbl">SÉRIE ATUAL</span>
+          <span class="wk-series-count" id="wk-series-count">1 / 4</span>
+        </div>
+        <div class="wk-series-bars" id="wk-series-bars">
+          <div class="wk-bar active"></div>
+          <div class="wk-bar"></div>
+          <div class="wk-bar"></div>
+          <div class="wk-bar"></div>
+        </div>
+      </div>
+
+      <div class="wk-load">
+        <div class="wk-load-head">
+          <span class="wk-load-last">ÚLTIMA: <b id="wk-last-load">57.5kg ▲ +2.5</b></span>
+        </div>
+        <div class="wk-load-ctrl">
+          <button class="wk-adj" onclick="adjustLoad(-2.5)">−</button>
+          <div class="wk-load-display">
+            <span class="wk-load-val" id="wk-load-val">60</span>
+            <span class="wk-load-unit">kg</span>
+          </div>
+          <button class="wk-adj" onclick="adjustLoad(2.5)">+</button>
+        </div>
+      </div>
+
+      <div id="wk-cta-idle">
+        <div class="wk-cta-idle" onclick="startSet()">
+          <div class="wk-cta-left">
+            <div class="wk-cta-mini">pronto para iniciar</div>
+            <div class="wk-cta-big">INICIAR SÉRIE</div>
+          </div>
+          <div class="wk-cta-icon">▶</div>
+        </div>
+      </div>
+
+      <div class="wk-timer-mode" id="wk-timer-mode">
+        <div class="wk-t-status" id="wk-t-status">EXECUTANDO</div>
+        <div class="wk-t-val" id="wk-t-val">00:00</div>
+        <div class="wk-t-actions">
+          <button class="wk-t-btn" id="wk-pause-set-btn" onclick="toggleSetPause()">PAUSAR</button>
+          <button class="wk-t-btn finish" onclick="finishSet()">FINALIZAR</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /.wk-panel -->
+
+  <!-- LISTA SCROLLÁVEL -->
+  <div class="wk-list-area" id="wk-list-area">
+    <div class="wk-list-head">
+      <span>TODOS OS EXERCÍCIOS</span>
+      <span id="wk-list-done-count">0/10 concluídos</span>
+    </div>
+    <div id="wk-exercise-list">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
+
+  <!-- placeholder necessário para o JS antigo -->
+  <div class="wk-next" id="wk-next" style="display:none"></div>
+</div>
+
+<!-- ======================================================
+     SCREEN 4: REPORT
+     ====================================================== -->
+<div class="screen" id="screen-report">
+  <div class="rp-content">
+    <div class="rp-hero">
+      <div class="rp-trophy">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#FFD700"/>
+              <stop offset=".5" stop-color="#FFB800"/>
+              <stop offset="1" stop-color="#8B6914"/>
+            </linearGradient>
+          </defs>
+          <path d="M 35 22 L 35 52 Q 35 66 50 66 Q 65 66 65 52 L 65 22 Z" fill="url(#tg)" stroke="#aa7800" stroke-width="1"/>
+          <path d="M 35 28 Q 22 28 22 42 Q 22 52 35 50" fill="none" stroke="url(#tg)" stroke-width="3"/>
+          <path d="M 65 28 Q 78 28 78 42 Q 78 52 65 50" fill="none" stroke="url(#tg)" stroke-width="3"/>
+          <rect x="45" y="66" width="10" height="10" fill="url(#tg)"/>
+          <rect x="35" y="76" width="30" height="6" rx="1" fill="url(#tg)"/>
+          <circle cx="50" cy="40" r="3" fill="#FFFAE6" opacity=".6"/>
+        </svg>
+      </div>
+      <div class="rp-title">missão completa</div>
+      <div class="rp-sub" id="rp-sub">Treino A · Posterior · Glúteo · Costas</div>
+    </div>
+
+    <div class="rp-xp">
+      <div class="rp-xp-top">
+        <div class="rp-lvl">LVL 27 · ATLETA</div>
+        <div class="rp-xp-gained">+340 XP</div>
+      </div>
+      <div class="rp-xp-bar"><div class="rp-xp-fill"></div></div>
+      <div class="rp-xp-meta">
+        <span>2.840 XP</span>
+        <span>↑ LVL 28: 460 XP restantes</span>
+      </div>
+    </div>
+
+    <div class="rp-achievement">
+      <div class="rp-ach-icon">🔥</div>
+      <div>
+        <div class="rp-ach-tag">★ CONQUISTA</div>
+        <div class="rp-ach-name">9 dias consecutivos</div>
+        <div class="rp-ach-desc">Streak de uma semana superada</div>
+      </div>
+    </div>
+
+    <div class="rp-boss">
+      <div class="rp-boss-lbl">RECORDE QUEBRADO</div>
+      <div class="rp-boss-name">Hip Thrust · 60kg</div>
+      <div class="rp-boss-stats">
+        <div class="rp-bstat"><div class="rp-bstat-lbl">ANTERIOR</div><div class="rp-bstat-val">57.5kg</div></div>
+        <div class="rp-bstat"><div class="rp-bstat-lbl">NOVO</div><div class="rp-bstat-val" style="color:#00FFC2">60kg</div></div>
+        <div class="rp-bstat"><div class="rp-bstat-lbl">GANHO</div><div class="rp-bstat-val" style="color:#00FFC2">+2.5kg</div></div>
+      </div>
+      <div class="rp-defeated">✓ BOSS DEFEATED</div>
+    </div>
+
+    <div class="rp-stats">
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">DURAÇÃO</div>
+        <div class="rp-stat-val" id="rp-duration">00:00</div>
+        <div class="rp-stat-trend up">3min mais rápido</div>
+      </div>
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">VOLUME</div>
+        <div class="rp-stat-val">8.7<span>t</span></div>
+        <div class="rp-stat-trend up">+12% vs último</div>
+      </div>
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">CALORIAS</div>
+        <div class="rp-stat-val">487<span>kcal</span></div>
+        <div class="rp-stat-trend neutral">est. MET</div>
+      </div>
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">SÉRIES</div>
+        <div class="rp-stat-val" id="rp-sets">28<span>/28</span></div>
+        <div class="rp-stat-trend up">100% completas</div>
+      </div>
+    </div>
+
+    <div class="rp-section">
+      <div class="rp-sect-title">EVOLUÇÃO DE CARGA</div>
+      <div class="evo-list">
+        <div class="evo-row"><span class="evo-name">Hip Thrust</span><span class="evo-prev">57.5</span><span class="evo-arrow">→</span><span class="evo-now">60kg</span><span class="evo-delta up">+2.5</span></div>
+        <div class="evo-row"><span class="evo-name">Stiff / RDL</span><span class="evo-prev">42.5</span><span class="evo-arrow">→</span><span class="evo-now">45kg</span><span class="evo-delta up">+2.5</span></div>
+        <div class="evo-row"><span class="evo-name">Nordic Curl</span><span class="evo-prev">corp</span><span class="evo-arrow">→</span><span class="evo-now">corp</span><span class="evo-delta flat">—</span></div>
+        <div class="evo-row"><span class="evo-name">Afundo Uni.</span><span class="evo-prev">36</span><span class="evo-arrow">→</span><span class="evo-now">36kg</span><span class="evo-delta flat">—</span></div>
+        <div class="evo-row"><span class="evo-name">Mesa Flexora</span><span class="evo-prev">35</span><span class="evo-arrow">→</span><span class="evo-now down">30kg</span><span class="evo-delta down">-5</span></div>
+      </div>
+    </div>
+
+    <button class="btn-primary">↗ COMPARTILHAR CONQUISTA</button>
+    <button class="btn-secondary" onclick="goHome()" style="margin-top:10px;">VOLTAR AO INÍCIO</button>
+  </div>
+</div>
+
+<!-- SHEET detalhe do exercício -->
+<div class="sheet-backdrop" id="sheet-backdrop" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-content">
+    <div class="sheet-title">HIP THRUST BARRA</div>
+    <div class="sheet-sub">GLÚTEO MÁXIMO · POSTERIOR · CORE · 4 × 8 · 60KG</div>
+    <div class="sheet-sb-title">STORYBOARD DE EXECUÇÃO</div>
+    <div class="storyboard-grid">
+      <div class="sb-frame"><span class="sb-num">01</span><span class="sb-lbl">INÍCIO</span>
+        <svg viewBox="0 0 100 125" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="110" width="100" height="2" fill="#1a1a1a" opacity=".5"/>
+          <rect x="15" y="70" width="35" height="18" rx="2" fill="#1a1a1a"/>
+          <rect x="5" y="58" width="90" height="3" rx="1" fill="#2a2a2a"/>
+          <ellipse cx="12" cy="60" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+          <ellipse cx="88" cy="60" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+          <ellipse cx="38" cy="56" rx="7" ry="5" fill="#d8d8d8"/>
+          <path d="M 28 67 Q 42 60 55 65 L 65 70 Q 55 75 28 75 Z" fill="#d8d8d8"/>
+          <rect x="55" y="65" width="22" height="12" rx="3" fill="#d8d8d8"/>
+          <rect x="73" y="76" width="8" height="32" rx="3" fill="#d8d8d8"/>
+        </svg>
+      </div>
+      <div class="sb-frame"><span class="sb-num">02</span><span class="sb-lbl">SUBIDA</span>
+        <svg viewBox="0 0 100 125" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="110" width="100" height="2" fill="#1a1a1a" opacity=".5"/>
+          <rect x="15" y="70" width="35" height="18" rx="2" fill="#1a1a1a"/>
+          <rect x="5" y="50" width="90" height="3" rx="1" fill="#2a2a2a"/>
+          <ellipse cx="12" cy="52" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+          <ellipse cx="88" cy="52" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+          <ellipse cx="38" cy="48" rx="7" ry="5" fill="#d8d8d8"/>
+          <path d="M 28 60 Q 50 45 65 55 L 70 65 Q 50 65 28 70 Z" fill="#d8d8d8"/>
+          <rect x="60" y="60" width="20" height="12" rx="3" fill="#d8d8d8"/>
+          <rect x="73" y="72" width="8" height="36" rx="3" fill="#d8d8d8"/>
+          <circle cx="78" cy="74" r="6" fill="#ff3860" opacity=".6"/>
+        </svg>
+      </div>
+      <div class="sb-frame"><span class="sb-num">03</span><span class="sb-lbl">PICO</span>
+        <svg viewBox="0 0 100 125" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="110" width="100" height="2" fill="#1a1a1a" opacity=".5"/>
+          <rect x="15" y="70" width="35" height="18" rx="2" fill="#1a1a1a"/>
+          <rect x="5" y="40" width="90" height="3" rx="1" fill="#2a2a2a"/>
+          <ellipse cx="12" cy="42" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+          <ellipse cx="88" cy="42" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+          <ellipse cx="38" cy="38" rx="7" ry="5" fill="#d8d8d8"/>
+          <path d="M 28 50 Q 55 38 70 50 L 75 60 Q 50 60 28 65 Z" fill="#d8d8d8"/>
+          <rect x="62" y="52" width="22" height="14" rx="3" fill="#d8d8d8"/>
+          <circle cx="82" cy="65" r="7" fill="#00FFC2" opacity=".5"/>
+          <circle cx="82" cy="65" r="4" fill="#d8d8d8"/>
+          <rect x="77" y="65" width="8" height="42" rx="3" fill="#d8d8d8"/>
+        </svg>
+      </div>
+      <div class="sb-frame"><span class="sb-num">04</span><span class="sb-lbl">DESCIDA</span>
+        <svg viewBox="0 0 100 125" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="110" width="100" height="2" fill="#1a1a1a" opacity=".5"/>
+          <rect x="15" y="70" width="35" height="18" rx="2" fill="#1a1a1a"/>
+          <rect x="5" y="55" width="90" height="3" rx="1" fill="#2a2a2a"/>
+          <ellipse cx="12" cy="57" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+          <ellipse cx="88" cy="57" rx="5" ry="11" fill="#1a1a1a" stroke="#FFB800" stroke-width=".5"/>
+          <ellipse cx="38" cy="53" rx="7" ry="5" fill="#d8d8d8"/>
+          <path d="M 28 64 Q 48 50 60 60 L 68 70 Q 50 70 28 72 Z" fill="#d8d8d8"/>
+          <rect x="56" y="62" width="22" height="12" rx="3" fill="#d8d8d8"/>
+          <rect x="73" y="74" width="8" height="34" rx="3" fill="#d8d8d8"/>
+        </svg>
+      </div>
+    </div>
+    <div class="sheet-sb-title">EXECUÇÃO PASSO A PASSO</div>
+    <div class="sheet-checklist">
+      <div class="sheet-check"><div class="check-n">1</div><div>Apoie os omoplatas no banco, barra na altura do quadril com proteção.</div></div>
+      <div class="sheet-check"><div class="check-n">2</div><div>Pés plantados, joelhos a 90° no topo do movimento.</div></div>
+      <div class="sheet-check"><div class="check-n">3</div><div>Contraia glúteo no topo. Pausa de 1 segundo. Desça em 3 segundos.</div></div>
+      <div class="sheet-check"><div class="check-n">4</div><div>Mantenha core ativo durante todo o movimento.</div></div>
+    </div>
+    <div class="sheet-sb-title">ATENÇÃO</div>
+    <div class="sheet-checklist">
+      <div class="sheet-check"><div class="check-n check-warn">!</div><div><strong style="color:#FFB800">Lombar:</strong> não hiperestenda. Quadril em linha com joelhos no topo.</div></div>
+      <div class="sheet-check"><div class="check-n check-warn">!</div><div><strong style="color:#FFB800">Joelhos:</strong> 90° no topo, alinhados com os pés, sem cair para dentro.</div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.phone -->
+
+<script>
+/* =================================================================
+   STATE
+   ================================================================= */
+const state = {
+  // Navegação
+  currentScreen: 'home',
+  history: { sessions: [] },
+
+  // Cartucho selecionado
+  cartridge: null,
+  program: null,
+
+  // Workout
+  totalSec: 0,
+  totalInterval: null,
+  setSec: 0,
+  setInterval: null,
+  restSec: 0,
+  restInterval: null,
+  currentSetNum: 1,
+  totalSets: 4,
+  currentExIdx: 0,
+  isSetRunning: false,
+  isSetPaused: false,
+  isGlobalPaused: false,
+  currentLoad: 60,
+  completedSets: 0,
+
+  // Exercícios simulados
+  exercises: [
+    { name:'HIP THRUST BARRA', desc:'GLÚTEO MÁXIMO · POSTERIOR · CORE', sets:4, reps:8, rest:90, load:60, lastLoad:'57.5kg ▲ +2.5', isFoco:true, next:'Stiff / RDL Barra', nextStats:'3 × 8 · 45kg' },
+    { name:'STIFF / RDL BARRA', desc:'POSTERIOR DE COXA · GLÚTEO', sets:3, reps:8, rest:90, load:45, lastLoad:'42.5kg ▲ +2.5', isFoco:false, next:'Nordic Curl', nextStats:'3 × 6 · corp.' },
+    { name:'NORDIC CURL', desc:'ISQUIOTIBIAL · PREVENÇÃO DE LESÃO', sets:3, reps:6, rest:120, load:0, lastLoad:'corporal', isFoco:true, next:'Afundo Unilateral', nextStats:'3 × 8 · 36kg' },
+    { name:'AFUNDO UNILATERAL', desc:'GLÚTEO · QUADRÍCEPS · EQUILÍBRIO', sets:3, reps:8, rest:75, load:36, lastLoad:'36kg —', isFoco:false, next:'Mesa Flexora', nextStats:'3 × 10 · 30kg' },
+    { name:'MESA FLEXORA', desc:'POSTERIOR DE COXA · ISOLADO', sets:3, reps:10, rest:75, load:30, lastLoad:'35kg ▼ -5', isFoco:false, next:'Puxada Alta', nextStats:'4 × 8 · 65kg' },
+    { name:'PUXADA ALTA POLIA', desc:'COSTAS · BÍCEPS', sets:4, reps:8, rest:90, load:65, lastLoad:'65kg —', isFoco:false, next:'Remada Curvada', nextStats:'3 × 8 · 40kg' },
+    { name:'REMADA CURVADA', desc:'COSTAS · TRAPÉZIO · ROMBÓIDE', sets:3, reps:8, rest:90, load:40, lastLoad:'40kg —', isFoco:false, next:'Fly Invertido', nextStats:'3 × 12 · 50kg' },
+    { name:'FLY INVERTIDO', desc:'DELTÓIDE POSTERIOR · SAÚDE ESCAPULAR', sets:3, reps:12, rest:60, load:50, lastLoad:'50kg —', isFoco:true, next:'Oblíquo + Infra Bosu', nextStats:'3 × 20 · corp.' },
+    { name:'OBLÍQUO + INFRA BOSU', desc:'CORE · OBLÍQUO · INFRAESPINAL', sets:3, reps:20, rest:60, load:0, lastLoad:'corporal', isFoco:false, next:'Pallof Press', nextStats:'3 × 12 · cada lado' },
+    { name:'PALLOF PRESS', desc:'CORE · ANTI-ROTAÇÃO · PROTEÇÃO LOMBAR', sets:3, reps:12, rest:60, load:0, lastLoad:'corporal', isFoco:true, next:null, nextStats:null },
+  ],
+};
+
+/* =================================================================
+   NAVEGAÇÃO
+   ================================================================= */
+function goTo(screenId) {
+  const cur = document.getElementById('screen-' + state.currentScreen);
+  const next = document.getElementById('screen-' + screenId);
+  if (!next) return;
+  if (cur) cur.classList.remove('active');
+  next.classList.add('active');
+  state.currentScreen = screenId;
+  window.scrollTo(0,0);
+  next.scrollTop = 0;
+}
+
+function goBack() {
+  const prev = state.history.pop();
+  if (!prev) return;
+  const cur = document.getElementById('screen-' + state.currentScreen);
+  const next = document.getElementById('screen-' + prev);
+  if (cur) cur.classList.remove('active');
+  if (next) next.classList.add('active');
+  state.currentScreen = prev;
+}
+
+function goHome() {
+  stopAll();
+  const savedSessions = state.history.sessions || [];
+  ['screen-home','screen-programs','screen-workout','screen-report','screen-history'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  document.getElementById('screen-home').classList.add('active');
+  state.currentScreen = 'home';
+  resetWorkout();
+  state.history.sessions = savedSessions; // preserva histórico
+}
+
+/* =================================================================
+   SCREEN 1 → 2
+   ================================================================= */
+function selectCartridge(id, name, author, sheets, weeks) {
+  state.cartridge = { id, name, author, sheets, weeks };
+  document.getElementById('prog-cart-label').textContent = name;
+  document.getElementById('prog-super').textContent = name;
+  goTo('programs');
+}
+
+/* =================================================================
+   SCREEN 2 → 3
+   ================================================================= */
+function selectProgram(label, title, focus, exCount, duration, muscles) {
+  state.program = { label, title, focus, exCount, duration, muscles };
+  resetWorkout();
+  // Primeiro exercício fica active
+  state.exercises[0].status = 'active';
+  buildExerciseList();
+  loadExercise(0);
+  startGlobalTimer();
+  goTo('workout');
+}
+
+/* =================================================================
+   WORKOUT ENGINE v6
+   ================================================================= */
+function resetWorkout() {
+  stopAll();
+  state.totalSec = 0;
+  state.setSec = 0;
+  state.restSec = 0;
+  state.currentSetNum = 1;
+  state.currentExIdx = 0;
+  state.isSetRunning = false;
+  state.isSetPaused = false;
+  state.isGlobalPaused = false;
+  state.completedSets = 0;
+  state.currentLoad = 60;
+
+  // Reset status de cada exercício
+  state.exercises.forEach(ex => {
+    ex.status = 'pending';       // pending | active | done
+    ex.completedSeries = 0;
+    ex.usedLoad = ex.load;
+  });
+
+  const timerEl = document.getElementById('wk-total-timer');
+  if (timerEl) { timerEl.textContent = '00:00'; timerEl.className = 'wk-timer live'; }
+  const ctaIdle = document.getElementById('wk-cta-idle');
+  if (ctaIdle) ctaIdle.style.display = 'block';
+  const timerMode = document.getElementById('wk-timer-mode');
+  if (timerMode) timerMode.classList.remove('show');
+  const restCard = document.getElementById('wk-rest');
+  if (restCard) restCard.classList.remove('show');
+  const pauseBtn = document.getElementById('wk-pause-btn');
+  if (pauseBtn) { pauseBtn.textContent = '⏸'; pauseBtn.className = 'wk-pause'; }
+}
+
+function buildExerciseList() {
+  const container = document.getElementById('wk-exercise-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  state.exercises.forEach((ex, idx) => {
+    const item = document.createElement('div');
+    item.className = 'wk-ex-item state-' + (ex.status || 'pending');
+    item.id = 'wk-item-' + idx;
+    item.onclick = () => selectExercise(idx);
+
+    // Calcular pills de série
+    let pillsHtml = '';
+    for (let s = 1; s <= ex.sets; s++) {
+      const done = s <= (ex.completedSeries || 0);
+      const active = !done && s === ((ex.completedSeries || 0) + 1) && ex.status === 'active';
+      pillsHtml += `<div class="sp${done ? ' done' : active ? ' active' : ''}"></div>`;
+    }
+
+    const statusHtml = ex.status === 'done'
+      ? `<div class="wk-item-done-check">✓</div>`
+      : ex.status === 'active'
+      ? `<div class="wk-item-status"><div class="series-pills">${pillsHtml}</div><div class="wk-item-tap">EM EXECUÇÃO</div></div>`
+      : `<div class="wk-item-status"><div class="series-pills">${pillsHtml}</div></div>`;
+
+    const focoHtml = ex.isFoco ? `<div class="wk-item-foco">★ FOCO</div>` : '';
+
+    item.innerHTML = `
+      <div class="wk-item-num">${String(idx + 1).padStart(2,'0')}</div>
+      <div class="wk-item-thumb">
+        <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="30" cy="20" rx="8" ry="7" fill="rgba(0,255,194,.4)"/>
+          <rect x="22" y="26" width="16" height="18" rx="3" fill="rgba(0,255,194,.4)"/>
+          <rect x="16" y="28" width="5" height="10" rx="2" fill="rgba(0,255,194,.3)"/>
+          <rect x="39" y="28" width="5" height="10" rx="2" fill="rgba(0,255,194,.3)"/>
+          <rect x="24" y="44" width="5" height="12" rx="2" fill="rgba(0,255,194,.3)"/>
+          <rect x="31" y="44" width="5" height="12" rx="2" fill="rgba(0,255,194,.3)"/>
+        </svg>
+      </div>
+      <div class="wk-item-info">
+        <div class="wk-item-name">${ex.name}</div>
+        <div class="wk-item-meta">${ex.sets} × ${ex.reps} · ${ex.load > 0 ? ex.load + 'kg' : 'corporal'} · ${ex.rest}s</div>
+      </div>
+      ${statusHtml}
+      ${focoHtml}
+    `;
+    container.appendChild(item);
+  });
+
+  updateListDoneCount();
+}
+
+function refreshListItem(idx) {
+  const ex = state.exercises[idx];
+  if (!ex) return;
+  const item = document.getElementById('wk-item-' + idx);
+  if (!item) return;
+
+  // Atualiza classe de estado
+  item.className = 'wk-ex-item state-' + ex.status;
+
+  // Atualiza pills
+  let pillsHtml = '';
+  for (let s = 1; s <= ex.sets; s++) {
+    const done = s <= (ex.completedSeries || 0);
+    const active = !done && s === ((ex.completedSeries || 0) + 1) && ex.status === 'active';
+    pillsHtml += `<div class="sp${done ? ' done' : active ? ' active' : ''}"></div>`;
+  }
+
+  const statusEl = item.querySelector('.wk-item-status, .wk-item-done-check');
+  if (statusEl) {
+    if (ex.status === 'done') {
+      statusEl.outerHTML = `<div class="wk-item-done-check">✓</div>`;
+    } else {
+      const tap = ex.status === 'active' ? '<div class="wk-item-tap">EM EXECUÇÃO</div>' : '';
+      statusEl.outerHTML = `<div class="wk-item-status"><div class="series-pills">${pillsHtml}</div>${tap}</div>`;
+    }
+  }
+
+  updateListDoneCount();
+}
+
+function updateListDoneCount() {
+  const done = state.exercises.filter(e => e.status === 'done').length;
+  const el = document.getElementById('wk-list-done-count');
+  if (el) el.textContent = `${done}/${state.exercises.length} concluídos`;
+}
+
+function scrollListToActive(idx) {
+  const item = document.getElementById('wk-item-' + idx);
+  const area = document.getElementById('wk-list-area');
+  if (item && area) {
+    const itemTop = item.offsetTop;
+    area.scrollTo({ top: itemTop - 20, behavior: 'smooth' });
+  }
+}
+
+function selectExercise(idx) {
+  const ex = state.exercises[idx];
+
+  // Bloqueia exercício já finalizado
+  if (ex.status === 'done') return;
+
+  // Se há série em andamento, não permite mudar
+  if (state.isSetRunning) {
+    alert('Finalize ou pause a série atual antes de mudar de exercício.');
+    return;
+  }
+
+  const prevIdx = state.currentExIdx;
+
+  // Exercício anterior: se estava active mas não done, volta a pending
+  if (prevIdx !== idx) {
+    const prevEx = state.exercises[prevIdx];
+    if (prevEx && prevEx.status === 'active') {
+      // Mantém como active mas sem execução
+    }
+  }
+
+  state.currentExIdx = idx;
+  state.currentSetNum = (state.exercises[idx].completedSeries || 0) + 1;
+
+  // Marca como active
+  state.exercises[idx].status = 'active';
+  refreshListItem(prevIdx);
+  refreshListItem(idx);
+  scrollListToActive(idx);
+  loadExercise(idx);
+}
+
+function loadExercise(idx) {
+  const ex = state.exercises[idx] || state.exercises[0];
+  state.currentLoad = ex.usedLoad || ex.load || 0;
+  state.totalSets = ex.sets;
+
+  document.getElementById('wk-exname').textContent = ex.name;
+  document.getElementById('wk-exdesc').textContent = ex.desc;
+  document.getElementById('wk-sets').textContent = ex.sets;
+  document.getElementById('wk-reps').textContent = ex.reps;
+  document.getElementById('wk-rest-val').innerHTML = ex.rest + '<span>s</span>';
+  document.getElementById('wk-load-val').textContent = state.currentLoad > 0 ? state.currentLoad : '—';
+  document.getElementById('wk-last-load').textContent = ex.lastLoad;
+  document.getElementById('wk-ex-num').textContent = String(idx + 1).padStart(2,'0');
+
+  const focoTag = document.getElementById('wk-foco-tag');
+  focoTag.className = ex.isFoco ? 'wk-tag' : 'wk-tag hidden';
+
+  // Série começa de onde parou
+  const startSet = (ex.completedSeries || 0) + 1;
+  updateSeriesBars(startSet, ex.sets);
+
+  // Progress
+  const done = state.exercises.filter(e => e.status === 'done').length;
+  const pct = Math.round((done / state.exercises.length) * 100);
+  document.getElementById('wk-prog-fill').style.width = Math.max(5, pct) + '%';
+  document.getElementById('wk-prog-txt').textContent = (done) + '/' + state.exercises.length;
+
+  // Reset CTA
+  document.getElementById('wk-cta-idle').style.display = 'block';
+  document.getElementById('wk-timer-mode').classList.remove('show');
+}
+
+function updateSeriesBars(current, total) {
+  const container = document.getElementById('wk-series-bars');
+  container.innerHTML = '';
+  document.getElementById('wk-series-count').textContent = current + ' / ' + total;
+
+  for (let i = 1; i <= total; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'wk-bar';
+    if (i < current) bar.classList.add('done');
+    else if (i === current) bar.classList.add('active');
+    container.appendChild(bar);
+  }
+}
+
+function startGlobalTimer() {
+  if (state.totalInterval) return;
+  state.totalInterval = setInterval(() => {
+    if (state.isGlobalPaused) return;
+    state.totalSec++;
+    const el = document.getElementById('wk-total-timer');
+    if (el) el.textContent = fmt(state.totalSec);
+  }, 1000);
+}
+
+function stopAll() {
+  clearInterval(state.totalInterval); state.totalInterval = null;
+  clearInterval(state.setInterval);   state.setInterval = null;
+  clearInterval(state.restInterval);  state.restInterval = null;
+}
+
+function fmt(s) {
+  const m = Math.floor(s/60), sec = s%60;
+  return m.toString().padStart(2,'0') + ':' + sec.toString().padStart(2,'0');
+}
+
+/* INICIAR SÉRIE */
+function startSet() {
+  state.isSetRunning = true;
+  state.isSetPaused = false;
+  state.setSec = 0;
+
+  document.getElementById('wk-cta-idle').style.display = 'none';
+  document.getElementById('wk-timer-mode').classList.add('show');
+  document.getElementById('wk-t-val').textContent = '00:00';
+  document.getElementById('wk-t-val').className = 'wk-t-val';
+  document.getElementById('wk-t-status').textContent = 'EXECUTANDO';
+  document.getElementById('wk-t-status').className = 'wk-t-status';
+  document.getElementById('wk-pause-set-btn').textContent = 'PAUSAR';
+
+  state.setInterval = setInterval(() => {
+    if (state.isSetPaused || state.isGlobalPaused) return;
+    state.setSec++;
+    const el = document.getElementById('wk-t-val');
+    if (el) el.textContent = fmt(state.setSec);
+  }, 1000);
+}
+
+/* PAUSAR SÉRIE */
+function toggleSetPause() {
+  state.isSetPaused = !state.isSetPaused;
+  const btn = document.getElementById('wk-pause-set-btn');
+  const status = document.getElementById('wk-t-status');
+  const val = document.getElementById('wk-t-val');
+  if (state.isSetPaused) {
+    btn.textContent = 'CONTINUAR';
+    status.textContent = 'PAUSADO';
+    status.className = 'wk-t-status paused';
+    val.className = 'wk-t-val paused';
+  } else {
+    btn.textContent = 'PAUSAR';
+    status.textContent = 'EXECUTANDO';
+    status.className = 'wk-t-status';
+    val.className = 'wk-t-val';
+  }
+}
+
+/* PAUSAR GLOBAL */
+function toggleGlobalPause() {
+  state.isGlobalPaused = !state.isGlobalPaused;
+  const btn = document.getElementById('wk-pause-btn');
+  const timer = document.getElementById('wk-total-timer');
+  if (state.isGlobalPaused) {
+    btn.textContent = '▶';
+    btn.className = 'wk-pause paused';
+    timer.className = 'wk-timer';
+  } else {
+    btn.textContent = '⏸';
+    btn.className = 'wk-pause';
+    timer.className = 'wk-timer live';
+  }
+}
+
+/* FINALIZAR SÉRIE */
+function finishSet() {
+  clearInterval(state.setInterval);
+  state.isSetRunning = false;
+  state.completedSets++;
+
+  const ex = state.exercises[state.currentExIdx];
+  ex.completedSeries = (ex.completedSeries || 0) + 1;
+  ex.usedLoad = state.currentLoad;
+
+  const isLastSetOfEx = ex.completedSeries >= ex.sets;
+  const allDone = state.exercises.every(e => e.status === 'done' || (e === ex && isLastSetOfEx));
+
+  if (isLastSetOfEx) {
+    // Exercício completo
+    ex.status = 'done';
+    refreshListItem(state.currentExIdx);
+
+    // Verifica se todos estão done
+    const totalDone = state.exercises.filter(e => e.status === 'done').length;
+    if (totalDone === state.exercises.length) {
+      finishWorkout();
+      return;
+    }
+
+    // Avança para próximo exercício pendente automaticamente
+    const nextIdx = findNextPending();
+    if (nextIdx !== -1) {
+      state.exercises[nextIdx].status = 'active';
+      state.currentExIdx = nextIdx;
+      startRest(ex.rest, true, nextIdx);
+    } else {
+      // Todos done
+      finishWorkout();
+    }
+  } else {
+    // Próxima série
+    state.currentSetNum = ex.completedSeries + 1;
+    refreshListItem(state.currentExIdx);
+    startRest(ex.rest, false, state.currentExIdx);
+  }
+}
+
+function findNextPending() {
+  // Próximo após o atual
+  for (let i = state.currentExIdx + 1; i < state.exercises.length; i++) {
+    if (state.exercises[i].status !== 'done') return i;
+  }
+  // Se não achou, busca do início
+  for (let i = 0; i < state.currentExIdx; i++) {
+    if (state.exercises[i].status !== 'done') return i;
+  }
+  return -1;
+}
+
+/* DESCANSO */
+function startRest(seconds, newExercise, targetIdx) {
+  state.restSec = seconds;
+  state._restTargetIdx = targetIdx;
+  state._restIsNewEx = newExercise;
+
+  const restEl = document.getElementById('wk-rest');
+  restEl.classList.add('show');
+  document.getElementById('wk-rest-timer').textContent = state.restSec;
+
+  const nextEx = state.exercises[targetIdx];
+  document.getElementById('wk-rest-next-name').textContent = nextEx ? nextEx.name : '—';
+
+  state.restInterval = setInterval(() => {
+    if (state.isGlobalPaused) return;
+    state.restSec--;
+    const el = document.getElementById('wk-rest-timer');
+    if (el) el.textContent = Math.max(0, state.restSec);
+    if (state.restSec <= 0) endRest();
+  }, 1000);
+}
+
+function endRest() {
+  clearInterval(state.restInterval);
+  document.getElementById('wk-rest').classList.remove('show');
+
+  const idx = state._restTargetIdx;
+  const isNew = state._restIsNewEx;
+
+  if (isNew) {
+    state.exercises[idx].status = 'active';
+    refreshListItem(idx);
+    scrollListToActive(idx);
+    loadExercise(idx);
+  } else {
+    // Mesma série
+    state.currentSetNum = (state.exercises[idx].completedSeries || 0) + 1;
+    updateSeriesBars(state.currentSetNum, state.exercises[idx].sets);
+    refreshListItem(idx);
+    document.getElementById('wk-cta-idle').style.display = 'block';
+    document.getElementById('wk-timer-mode').classList.remove('show');
+  }
+}
+
+function skipRest() {
+  clearInterval(state.restInterval);
+  endRest();
+}
+
+/* AJUSTAR CARGA */
+function adjustLoad(delta) {
+  state.currentLoad = Math.max(0, state.currentLoad + delta);
+  const d = state.currentLoad % 1 === 0 ? state.currentLoad : state.currentLoad.toFixed(1);
+  document.getElementById('wk-load-val').textContent = d > 0 ? d : '—';
+  state.exercises[state.currentExIdx].usedLoad = state.currentLoad;
+}
+
+/* CONFIRMAR SAÍDA */
+function confirmExit() {
+  if (confirm('Encerrar treino? O progresso atual será salvo.')) {
+    finishWorkout();
+  }
+}
+
+/* FINALIZAR TREINO → REPORT */
+function finishWorkout() {
+  stopAll();
+
+  // Salva no histórico
+  const session = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }),
+    dateMs: Date.now(),
+    program: state.program ? state.program.label : 'A',
+    programTitle: state.program ? state.program.title : 'Treino',
+    cartridge: state.cartridge ? state.cartridge.name : 'ELITE FUTEBOL',
+    duration: state.totalSec,
+    sets: state.completedSets,
+    totalSets: state.exercises.reduce((a,e) => a+e.sets, 0),
+    volume: state.exercises.reduce((a,e) => a + (e.usedLoad||0) * e.sets * e.reps, 0),
+    hasPR: state.completedSets > 0,
+  };
+  state.history.sessions = state.history.sessions || [];
+  state.history.sessions.unshift(session);
+  saveSessionsToStorage(); // persiste no dispositivo
+
+  document.getElementById('rp-duration').textContent = fmt(state.totalSec);
+  document.getElementById('rp-sets').innerHTML = state.completedSets + '<span>/' + session.totalSets + '</span>';
+  if (state.program) document.getElementById('rp-sub').textContent = 'Treino ' + state.program.label + ' · ' + state.program.title;
+  goTo('report');
+}
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+function openHistory() {
+  renderHistory();
+  // Atualiza nav
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  goTo('history');
+}
+
+function renderHistory() {
+  const sessions = (state.history && state.history.sessions) || [];
+
+  // Totais
+  const totalMin = Math.round(sessions.reduce((a,s) => a + s.duration, 0) / 60);
+  document.getElementById('hist-total').textContent = sessions.length;
+  document.getElementById('hist-hours').textContent = totalMin >= 60 ? Math.round(totalMin/60) + 'h' : totalMin + 'min';
+  document.getElementById('hist-streak').textContent = '9'; // streak estático por ora
+
+  const list = document.getElementById('hist-list');
+
+  if (sessions.length === 0) {
+    list.innerHTML = `
+      <div class="hist-empty">
+        <div class="hist-empty-icon">📋</div>
+        <div class="hist-empty-title">Nenhum treino ainda</div>
+        <div class="hist-empty-sub">Seu histórico aparecerá aqui depois do primeiro treino concluído.</div>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = sessions.map(s => `
+    <div class="hist-item">
+      <div class="hist-item-left">
+        <div class="hist-item-letter">${s.program}</div>
+        <div class="hist-item-date">${s.date}</div>
+      </div>
+      <div class="hist-item-info">
+        <div class="hist-item-name">${s.programTitle}</div>
+        <div class="hist-item-cart">${s.cartridge}</div>
+        <div class="hist-item-meta">${s.sets}/${s.totalSets} séries · ${Math.round(s.volume/1000*10)/10}t volume</div>
+      </div>
+      <div class="hist-item-right">
+        <div class="hist-item-duration">${fmt(s.duration)}</div>
+        <div class="hist-item-vol">${Math.round(s.volume)} kg</div>
+        ${s.hasPR ? '<div class="hist-item-pr">★ PR</div>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+/* =================================================================
+   SHEET
+   ================================================================= */
+function openSheet() {
+  document.getElementById('sheet-backdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+}
+function closeSheet() {
+  document.getElementById('sheet-backdrop').classList.remove('open');
+  document.getElementById('sheet').classList.remove('open');
+}
+
+/* =================================================================
+   PERSISTÊNCIA — localStorage
+   ================================================================= */
+const STORAGE_KEY = 'gameboyfit_sessions_v1';
+
+function saveSessionsToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.history.sessions));
+  } catch(e) {}
+}
+
+function loadSessionsFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
+
+// Carrega do localStorage ou usa dados demo na primeira vez
+const saved = loadSessionsFromStorage();
+if (saved && saved.length > 0) {
+  state.history.sessions = saved;
+} else {
+  // Demo — só na primeira abertura
+  state.history.sessions = [
+    { id:1, date:'15 mai', program:'A', programTitle:'Posterior · Glúteo · Costas', cartridge:'ELITE FUTEBOL', duration:3240, sets:28, totalSets:28, volume:18600, hasPR:true },
+    { id:2, date:'13 mai', program:'B', programTitle:'Quad · Peito · Ombros · Braços', cartridge:'ELITE FUTEBOL', duration:3600, sets:30, totalSets:31, volume:22400, hasPR:false },
+    { id:3, date:'11 mai', program:'A', programTitle:'Posterior · Glúteo · Costas', cartridge:'ELITE FUTEBOL', duration:3060, sets:28, totalSets:28, volume:17200, hasPR:false },
+    { id:4, date:'08 mai', program:'B', programTitle:'Quad · Peito · Ombros · Braços', cartridge:'ELITE FUTEBOL', duration:3780, sets:31, totalSets:31, volume:23100, hasPR:true },
+    { id:5, date:'06 mai', program:'A', programTitle:'Posterior · Glúteo · Costas', cartridge:'ELITE FUTEBOL', duration:3120, sets:27, totalSets:28, volume:16800, hasPR:false },
+    { id:6, date:'04 mai', program:'B', programTitle:'Quad · Peito · Ombros · Braços', cartridge:'ELITE FUTEBOL', duration:3540, sets:30, totalSets:31, volume:21900, hasPR:false },
+  ];
+  saveSessionsToStorage(); // salva demo no storage
+}
+
+// Aguarda DOM e renderiza histórico
+document.addEventListener('DOMContentLoaded', () => {
+  renderHistory();
+});
+
+// Registra Service Worker (PWA offline)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+</script>
+
+<!-- ======================================================
+     SCREEN 5: HISTORY — dentro do .phone
+     ====================================================== -->
+<div class="screen" id="screen-history">
+  <div class="hist-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:4px;">
+      <div class="hist-title">Histórico</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(0,255,194,.7);letter-spacing:1px;cursor:pointer;" onclick="goHome()">← voltar</div>
+    </div>
+    <div class="hist-sub">todos os treinos realizados</div>
+
+    <div class="hist-summary">
+      <div class="hist-sum-item">
+        <div class="hist-sum-val" id="hist-total">9</div>
+        <div class="hist-sum-lbl">TREINOS</div>
+      </div>
+      <div class="hist-sum-item">
+        <div class="hist-sum-val" id="hist-hours">9h</div>
+        <div class="hist-sum-lbl">TEMPO TOTAL</div>
+      </div>
+      <div class="hist-sum-item">
+        <div class="hist-sum-val" id="hist-streak">9</div>
+        <div class="hist-sum-lbl">STREAK</div>
+      </div>
+    </div>
+
+    <div class="hist-section-title">TREINOS RECENTES</div>
+    <div id="hist-list"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goHome()"><span class="nav-ico">⬚</span>CARTUCHOS</div>
+    <div class="nav-item active"><span class="nav-ico">📋</span>HISTÓRICO</div>
+    <div class="nav-item"><span class="nav-ico">⚙</span>CONFIG</div>
+  </div>
+</div>
+
+</div><!-- /.phone -->
+
+</body>
+</html>
