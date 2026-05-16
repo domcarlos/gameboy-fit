@@ -1107,27 +1107,27 @@ body {
   background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
   border: 1px solid rgba(255,255,255,.05);
   border-radius: 16px;
-  padding: 16px;
+  padding: 14px;
   margin-bottom: 10px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   cursor: pointer;
   transition: all .15s;
 }
 .hist-item:hover { border-color: rgba(0,255,194,.2); }
 .hist-item:active { transform: scale(.99); }
 
-.hist-item-left { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 44px; }
+.hist-item-left { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 44px; flex-shrink: 0; }
 .hist-item-letter { width: 44px; height: 44px; border-radius: 11px; background: linear-gradient(135deg, rgba(0,255,194,.15), rgba(0,255,194,.02)); border: 1px solid rgba(0,255,194,.3); display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 20px; color: #00FFC2; }
 .hist-item-date { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: rgba(255,255,255,.35); letter-spacing: .5px; text-align: center; }
 
-.hist-item-info { flex: 1; min-width: 0; }
-.hist-item-name { font-size: 14px; font-weight: 600; color: #fff; }
-.hist-item-cart { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(0,255,194,.6); letter-spacing: .5px; margin-top: 2px; }
-.hist-item-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.35); margin-top: 4px; }
+.hist-item-info { flex: 1; min-width: 0; overflow: hidden; }
+.hist-item-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-item-cart { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(0,255,194,.6); letter-spacing: .5px; margin-top: 2px; }
+.hist-item-meta { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,.35); margin-top: 4px; white-space: nowrap; }
 
-.hist-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.hist-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; min-width: 68px; }
 .hist-item-duration { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 14px; color: #fff; }
 .hist-item-vol { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(0,255,194,.7); letter-spacing: .5px; }
 .hist-item-pr { background: rgba(255,56,96,.1); border: 1px solid rgba(255,56,96,.3); color: #FF3860; font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
@@ -2202,9 +2202,13 @@ function finishWorkout() {
   stopAll();
 
   // Salva no histórico
+  const now = new Date();
+  const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const dateStr = now.getDate() + ' ' + months[now.getMonth()];
+
   const session = {
     id: Date.now(),
-    date: new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }),
+    date: dateStr,
     dateMs: Date.now(),
     program: state.program ? state.program.label : 'A',
     programTitle: state.program ? state.program.title : 'Treino',
@@ -2308,22 +2312,9 @@ function loadSessionsFromStorage() {
   return null;
 }
 
-// Carrega do localStorage ou usa dados demo na primeira vez
+// Carrega histórico do localStorage (vazio na primeira abertura)
 const saved = loadSessionsFromStorage();
-if (saved && saved.length > 0) {
-  state.history.sessions = saved;
-} else {
-  // Demo — só na primeira abertura
-  state.history.sessions = [
-    { id:1, date:'15 mai', program:'A', programTitle:'Posterior · Glúteo · Costas', cartridge:'ELITE FUTEBOL', duration:3240, sets:28, totalSets:28, volume:18600, hasPR:true },
-    { id:2, date:'13 mai', program:'B', programTitle:'Quad · Peito · Ombros · Braços', cartridge:'ELITE FUTEBOL', duration:3600, sets:30, totalSets:31, volume:22400, hasPR:false },
-    { id:3, date:'11 mai', program:'A', programTitle:'Posterior · Glúteo · Costas', cartridge:'ELITE FUTEBOL', duration:3060, sets:28, totalSets:28, volume:17200, hasPR:false },
-    { id:4, date:'08 mai', program:'B', programTitle:'Quad · Peito · Ombros · Braços', cartridge:'ELITE FUTEBOL', duration:3780, sets:31, totalSets:31, volume:23100, hasPR:true },
-    { id:5, date:'06 mai', program:'A', programTitle:'Posterior · Glúteo · Costas', cartridge:'ELITE FUTEBOL', duration:3120, sets:27, totalSets:28, volume:16800, hasPR:false },
-    { id:6, date:'04 mai', program:'B', programTitle:'Quad · Peito · Ombros · Braços', cartridge:'ELITE FUTEBOL', duration:3540, sets:30, totalSets:31, volume:21900, hasPR:false },
-  ];
-  saveSessionsToStorage(); // salva demo no storage
-}
+state.history.sessions = saved || [];
 
 // Aguarda DOM e renderiza histórico
 document.addEventListener('DOMContentLoaded', () => {
