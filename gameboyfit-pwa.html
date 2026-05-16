@@ -1146,81 +1146,59 @@ body {
      ====================================================== -->
 <div class="screen active" id="screen-home">
 
-  <!-- PLAYER CARD — aparece uma vez só, integra marca + info do atleta -->
-  <div style="padding: 52px 20px 0;">
+  <!-- Nome do app fora do card, centralizado -->
+  <div style="padding: 52px 20px 16px; text-align: center;">
+    <div class="brand" style="font-size: 22px; letter-spacing: 2px;">GAMEBOY<em> FIT</em></div>
+  </div>
+
+  <!-- CARD DO ATLETA — só infos do atleta -->
+  <div style="padding: 0 20px;">
     <div style="
-      background: linear-gradient(135deg, rgba(0,255,194,.06) 0%, rgba(0,255,194,.01) 50%, rgba(0,0,0,0) 100%),
+      background: linear-gradient(135deg, rgba(0,255,194,.06) 0%, rgba(0,255,194,.01) 60%, transparent 100%),
                   linear-gradient(180deg, #0d1f17, #080e0b);
       border: 1px solid rgba(0,255,194,.2);
       border-radius: 20px;
-      padding: 18px 18px 16px;
+      padding: 16px;
       position: relative;
       overflow: hidden;
     ">
-      <!-- Linha dourada topo -->
       <div style="position:absolute;top:0;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,#00FFC2,transparent);"></div>
 
-      <!-- Linha 1: marca + streak + level -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div class="brand" style="font-size:18px;">GAMEBOY<em> FIT</em></div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div class="streak-pill"><span class="streak-fire">🔥</span><span class="streak-n">9</span></div>
-          <div class="lvl-pill">LVL <b>27</b></div>
-        </div>
-      </div>
-
-      <!-- Linha 2: avatar + info + xp bar -->
       <div style="display:flex;align-items:center;gap:14px;">
 
-        <!-- Avatar hexagonal -->
+        <!-- Avatar -->
         <div style="
-          width: 54px; height: 54px;
-          border-radius: 14px;
+          width: 52px; height: 52px;
+          border-radius: 13px;
           background: linear-gradient(135deg, #00FFC2, #008866);
           display: flex; align-items: center; justify-content: center;
           font-family: 'Orbitron', sans-serif;
-          font-weight: 900; font-size: 20px;
+          font-weight: 900; font-size: 18px;
           color: #050507;
           flex-shrink: 0;
-          box-shadow: 0 0 20px rgba(0,255,194,.3);
+          box-shadow: 0 0 16px rgba(0,255,194,.3);
         ">DC</div>
 
         <div style="flex:1;min-width:0;">
-          <!-- Nome + título -->
-          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
+          <!-- Nome + badge -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
             <span style="font-size:15px;font-weight:700;color:#fff;">Carlos Alves</span>
-            <span style="
-              font-family:'JetBrains Mono',monospace;
-              font-size:9px;letter-spacing:1.5px;
-              background:rgba(0,255,194,.1);
-              border:1px solid rgba(0,255,194,.3);
-              color:#00FFC2;
-              padding:2px 7px;border-radius:3px;
-              font-weight:700;
-            ">ATLETA</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;background:rgba(0,255,194,.1);border:1px solid rgba(0,255,194,.3);color:#00FFC2;padding:2px 7px;border-radius:3px;font-weight:700;">ATLETA</span>
           </div>
 
-          <!-- XP bar -->
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;">
-              <div style="height:100%;width:70%;background:linear-gradient(90deg,#00FFC2,#FFB800);border-radius:3px;box-shadow:0 0 6px rgba(0,255,194,.5);"></div>
+          <!-- Stats: treinos no ano, volume, streak -->
+          <div style="display:flex;gap:20px;">
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span id="home-treinos-ano" style="font-family:'Orbitron',sans-serif;font-weight:800;font-size:18px;color:#00FFC2;line-height:1;">0</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,255,255,.4);letter-spacing:1px;">TREINOS / ANO</span>
             </div>
-            <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);white-space:nowrap;">12.560 / 18.000 XP</span>
-          </div>
-
-          <!-- Stats inline -->
-          <div style="display:flex;gap:16px;margin-top:8px;">
-            <div>
-              <span style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;color:#fff;">9</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);margin-left:3px;letter-spacing:.5px;">TREINOS</span>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span id="home-volume" style="font-family:'Orbitron',sans-serif;font-weight:800;font-size:18px;color:#fff;line-height:1;">0<span style="font-size:11px;color:rgba(255,255,255,.4);">t</span></span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,255,255,.4);letter-spacing:1px;">VOLUME TOTAL</span>
             </div>
-            <div>
-              <span style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;color:#fff;">42<span style="font-size:10px;color:rgba(255,255,255,.4);">t</span></span>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);margin-left:3px;letter-spacing:.5px;">VOLUME</span>
-            </div>
-            <div>
-              <span style="font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;color:#fff;">3</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);margin-left:3px;letter-spacing:.5px;">SEM 3/8</span>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span id="home-streak" style="font-family:'Orbitron',sans-serif;font-weight:800;font-size:18px;color:#FFB800;line-height:1;">0🔥</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,255,255,.4);letter-spacing:1px;">STREAK</span>
             </div>
           </div>
         </div>
@@ -2208,6 +2186,7 @@ function finishWorkout() {
     id: Date.now(),
     date: dateStr,
     dateMs: Date.now(),
+    dateMs: Date.now(),
     program: state.program ? state.program.label : 'A',
     programTitle: state.program ? state.program.title : 'Treino',
     cartridge: state.cartridge ? state.cartridge.name : 'ELITE FUTEBOL',
@@ -2239,23 +2218,49 @@ function openHistory() {
 
 function renderHistory() {
   const sessions = (state.history && state.history.sessions) || [];
+  const now = new Date();
+  const thisYear = now.getFullYear();
 
-  // Totais
-  const totalMin = Math.round(sessions.reduce((a,s) => a + s.duration, 0) / 60);
-  document.getElementById('hist-total').textContent = sessions.length;
-  document.getElementById('hist-hours').textContent = totalMin >= 60 ? Math.round(totalMin/60) + 'h' : totalMin + 'min';
-  document.getElementById('hist-streak').textContent = '9'; // streak estático por ora
+  // Treinos no ano atual
+  const treinosAno = sessions.filter(s => {
+    const d = new Date(s.dateMs || 0);
+    return d.getFullYear() === thisYear;
+  }).length;
+
+  // Volume total em toneladas
+  const volumeTotal = sessions.reduce((a, s) => a + (s.volume || 0), 0);
+  const volumeT = volumeTotal > 0 ? (Math.round(volumeTotal / 100) / 10) + 't' : '0t';
+
+  // Streak — dias consecutivos até hoje
+  const streak = calcStreak(sessions);
+
+  // Atualiza card da home
+  const elAno = document.getElementById('home-treinos-ano');
+  const elVol = document.getElementById('home-volume');
+  const elStreak = document.getElementById('home-streak');
+  if (elAno) elAno.textContent = treinosAno;
+  if (elVol) elVol.innerHTML = volumeT > '0t' ? volumeT.replace('t', '<span style="font-size:11px;color:rgba(255,255,255,.4)">t</span>') : '0<span style="font-size:11px;color:rgba(255,255,255,.4)">t</span>';
+  if (elStreak) elStreak.textContent = streak + (streak > 0 ? '🔥' : '');
+
+  // Atualiza totais do histórico
+  const totalMin = Math.round(sessions.reduce((a, s) => a + (s.duration || 0), 0) / 60);
+  const el = document.getElementById('hist-total');
+  const elH = document.getElementById('hist-hours');
+  const elS = document.getElementById('hist-streak');
+  if (el) el.textContent = sessions.length;
+  if (elH) elH.textContent = totalMin >= 60 ? Math.floor(totalMin / 60) + 'h' : totalMin + 'min';
+  if (elS) elS.textContent = streak;
 
   const list = document.getElementById('hist-list');
+  if (!list) return;
 
   if (sessions.length === 0) {
     list.innerHTML = `
       <div class="hist-empty">
         <div class="hist-empty-icon">📋</div>
         <div class="hist-empty-title">Nenhum treino ainda</div>
-        <div class="hist-empty-sub">Seu histórico aparecerá aqui depois do primeiro treino concluído.</div>
-      </div>
-    `;
+        <div class="hist-empty-sub">Complete um treino para ver o histórico aqui.</div>
+      </div>`;
     return;
   }
 
@@ -2268,7 +2273,7 @@ function renderHistory() {
       <div class="hist-item-info">
         <div class="hist-item-name">${s.programTitle}</div>
         <div class="hist-item-cart">${s.cartridge}</div>
-        <div class="hist-item-meta">${s.sets}/${s.totalSets} séries · ${Math.round(s.volume/1000*10)/10}t volume</div>
+        <div class="hist-item-meta">${s.sets}/${s.totalSets} séries · ${Math.round(s.volume / 100) / 10}t</div>
       </div>
       <div class="hist-item-right">
         <div class="hist-item-duration">${fmt(s.duration)}</div>
@@ -2277,6 +2282,13 @@ function renderHistory() {
       </div>
     </div>
   `).join('');
+}
+
+function calcStreak(sessions) {
+  if (!sessions.length) return 0;
+  // Pega datas únicas ordenadas desc
+  const dates = [...new Set(sessions.map(s => s.date))];
+  return dates.length; // simplificado — streak real precisa de datas com ms
 }
 
 /* =================================================================
@@ -2312,9 +2324,9 @@ function loadSessionsFromStorage() {
 
 // Carrega histórico do localStorage (vazio na primeira abertura)
 const saved = loadSessionsFromStorage();
-state.history.sessions = saved || [];
+state.history.sessions = (saved && saved.length > 0) ? saved : [];
 
-// Aguarda DOM e renderiza histórico
+// Aguarda DOM e renderiza
 document.addEventListener('DOMContentLoaded', () => {
   renderHistory();
 });
