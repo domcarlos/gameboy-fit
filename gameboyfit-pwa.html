@@ -895,8 +895,70 @@ body {
   font-weight: 700;
 }
 
-/* Foco badge — só no card ativo, não na lista */
-.wk-item-foco { display: none; }
+/* CARD DUPLO CONJUGADO */
+.wk-conj-panel {
+  display: none;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.wk-conj-panel.show { display: flex; }
+.wk-conj-card {
+  flex: 1;
+  border-radius: 12px;
+  padding: 10px;
+  border: 1.5px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+  transition: all .3s ease;
+  min-width: 0;
+}
+.wk-conj-card.active {
+  border-color: rgba(0,255,194,.5);
+  background: linear-gradient(135deg, rgba(0,255,194,.1), rgba(0,255,194,.02));
+  box-shadow: 0 0 16px rgba(0,255,194,.15);
+}
+.wk-conj-card.inactive {
+  opacity: .4;
+}
+.wk-conj-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,.4);
+  margin-bottom: 4px;
+}
+.wk-conj-card.active .wk-conj-label { color: rgba(0,255,194,.8); }
+.wk-conj-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  color: rgba(255,255,255,.5);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wk-conj-card.active .wk-conj-name { color: #fff; font-size: 12px; }
+.wk-conj-series {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+.wk-conj-dot {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,.08);
+}
+.wk-conj-dot.done { background: rgba(0,255,194,.4); }
+.wk-conj-dot.active { background: #00FFC2; box-shadow: 0 0 6px rgba(0,255,194,.5); animation: barPulse 1.5s ease-in-out infinite; }
+.wk-conj-arrow {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  color: rgba(0,255,194,.5);
+  flex-shrink: 0;
+  padding-top: 14px;
+}
 
 /* Conjugado na lista — sem margem entre pares */
 .wk-ex-item.conjugated-top { border-radius: 14px 14px 4px 4px; margin-bottom: 1px; }
@@ -1578,6 +1640,21 @@ body {
         </div>
       </div>
 
+      <!-- CARD DUPLO CONJUGADO (visível só para exercícios conjugados) -->
+      <div class="wk-conj-panel" id="wk-conj-panel">
+        <div class="wk-conj-card" id="wk-conj-a">
+          <div class="wk-conj-label">PARTE A</div>
+          <div class="wk-conj-name" id="wk-conj-a-name">—</div>
+          <div class="wk-conj-series" id="wk-conj-a-dots"></div>
+        </div>
+        <div class="wk-conj-arrow">⇄</div>
+        <div class="wk-conj-card" id="wk-conj-b">
+          <div class="wk-conj-label">PARTE B</div>
+          <div class="wk-conj-name" id="wk-conj-b-name">—</div>
+          <div class="wk-conj-series" id="wk-conj-b-dots"></div>
+        </div>
+      </div>
+
       <div class="wk-stats">
         <div class="wk-stat"><div class="wk-stat-lbl">SÉRIES</div><div class="wk-stat-val" id="wk-sets">4</div></div>
         <div class="wk-stat"><div class="wk-stat-lbl">REPS</div><div class="wk-stat-val" id="wk-reps">8</div></div>
@@ -2185,7 +2262,8 @@ function loadExercise(idx) {
   document.getElementById('wk-prog-fill').style.width = Math.max(5, pct) + '%';
   document.getElementById('wk-prog-txt').textContent = done + '/' + state.exercises.length;
 
-  // NÃO mexe em visibilidade — isso é responsabilidade exclusiva de showCTA/showRest/showTimer
+  // Painel conjugado — detecta e renderiza se necessário
+  maybeRenderConjugated(idx);
 }
 
 function updateSeriesBars(current, total) {
@@ -2306,83 +2384,161 @@ function finishSet() {
   state.isSetRunning = false;
   state.completedSets++;
 
-  const ex = state.exercises[state.currentExIdx];
+  const exIdx = state.currentExIdx;
+  const ex = state.exercises[exIdx];
   ex.completedSeries = (ex.completedSeries || 0) + 1;
   ex.usedLoad = state.currentLoad;
 
   const isLastSetOfEx = ex.completedSeries >= ex.sets;
 
-  // --- LÓGICA DE CONJUGADO ---
-  // Se este exercício tem par conjugado e ainda não fez o par desta série
-  if (ex.conjugated && !state.conjugatedPending) {
-    // Acabou a parte A → vai para parte B sem descanso
-    const partnerIdx = state.exercises.findIndex((e, i) => i !== state.currentExIdx && e.name === ex.conjugated);
-    if (partnerIdx !== -1) {
-      const partner = state.exercises[partnerIdx];
-      // Parte B recebe a mesma série que A
-      state.conjugatedPending = true;
-      state._conjugatedReturnIdx = state.currentExIdx;
+  // ================================================================
+  // CONJUGADO: A → B → descanso → A → B → descanso → ...
+  // ================================================================
+  if (ex.conjugated) {
+    const partnerIdx = state.exercises.findIndex((e, i) => i !== exIdx && e.name === ex.conjugated);
+    const partner = partnerIdx !== -1 ? state.exercises[partnerIdx] : null;
 
-      state.exercises[partnerIdx].status = 'active';
-      state.currentExIdx = partnerIdx;
-      state.currentSetNum = (partner.completedSeries || 0) + 1;
-      refreshListItem(state._conjugatedReturnIdx);
-      refreshListItem(partnerIdx);
-      loadExercise(partnerIdx);
-      showCTA(); // mostra CTA para iniciar parte B
-      return; // sem descanso — vai direto para B
+    if (!partner) {
+      // Parceiro não encontrado — trata como normal
+      _finishNormal(ex, exIdx, isLastSetOfEx);
+      return;
     }
-  }
 
-  // Após completar parte B do conjugado (ou exercício normal)
-  if (state.conjugatedPending) {
-    state.conjugatedPending = false;
-    const returnIdx = state._conjugatedReturnIdx;
-    const returnEx = state.exercises[returnIdx];
-    const isLastSetOfPair = ex.completedSeries >= ex.sets;
+    // Descobre quem é A e quem é B baseado no índice (A vem antes de B)
+    const isPartA = exIdx < partnerIdx;
+    const aIdx = isPartA ? exIdx : partnerIdx;
+    const bIdx = isPartA ? partnerIdx : exIdx;
+    const aEx = state.exercises[aIdx];
+    const bEx = state.exercises[bIdx];
 
-    if (isLastSetOfPair) {
-      // Par completo → ambos done
-      ex.status = 'done';
-      returnEx.status = 'done';
-      refreshListItem(state.currentExIdx);
-      refreshListItem(returnIdx);
+    if (isPartA) {
+      // Acabou parte A → vai imediatamente para B sem descanso
+      state.currentExIdx = bIdx;
+      state.exercises[bIdx].status = 'active';
+      refreshListItem(aIdx);
+      refreshListItem(bIdx);
+      renderConjugatedCard(aIdx, bIdx, bIdx); // acende B
+      showCTA();
+      return;
     } else {
-      // Volta para A para próxima série do par
-      state.exercises[returnIdx].status = 'active';
-      state.currentExIdx = returnIdx;
-      state.currentSetNum = (returnEx.completedSeries || 0) + 1;
-      refreshListItem(state.currentExIdx);
+      // Acabou parte B → verifica se par de séries está completo
+      const seriesDone = bEx.completedSeries; // B e A têm o mesmo número de séries feitas agora
+      const totalSeries = aEx.sets; // A e B têm o mesmo total de séries
+
+      if (seriesDone >= totalSeries) {
+        // TODAS AS SÉRIES DO PAR CONCLUÍDAS → ambos done
+        aEx.status = 'done';
+        bEx.status = 'done';
+        refreshListItem(aIdx);
+        refreshListItem(bIdx);
+        hideConjugatedCard();
+
+        const allDone = state.exercises.every(e => e.status === 'done');
+        if (allDone) { finishWorkout(); return; }
+
+        const nextIdx = findNextPending();
+        if (nextIdx !== -1) startRest(bEx.rest || 90, true, nextIdx);
+        else finishWorkout();
+      } else {
+        // Ainda tem séries → descanso e volta para A
+        const restSecs = bEx.rest || aEx.rest || 90;
+        state.currentExIdx = aIdx;
+        state.exercises[aIdx].status = 'active';
+        refreshListItem(aIdx);
+        refreshListItem(bIdx);
+        renderConjugatedCard(aIdx, bIdx, aIdx); // acende A para próxima série
+        startRest(restSecs, false, aIdx);
+      }
+      return;
     }
-
-    const allDone = state.exercises.every(e => e.status === 'done');
-    if (allDone) { finishWorkout(); return; }
-
-    const nextPending = isLastSetOfPair ? findNextPending() : returnIdx;
-    const restSecs = ex.rest > 0 ? ex.rest : returnEx.rest;
-    startRest(restSecs || 90, isLastSetOfPair, isLastSetOfPair ? nextPending : returnIdx);
-    return;
   }
 
-  // --- EXERCÍCIO NORMAL ---
+  // ================================================================
+  // EXERCÍCIO NORMAL
+  // ================================================================
+  _finishNormal(ex, exIdx, isLastSetOfEx);
+}
+
+function _finishNormal(ex, exIdx, isLastSetOfEx) {
   if (isLastSetOfEx) {
     ex.status = 'done';
-    refreshListItem(state.currentExIdx);
-
+    refreshListItem(exIdx);
     const totalDone = state.exercises.filter(e => e.status === 'done').length;
     if (totalDone === state.exercises.length) { finishWorkout(); return; }
-
     const nextIdx = findNextPending();
-    if (nextIdx !== -1) {
-      startRest(ex.rest || 90, true, nextIdx);
-    } else {
-      finishWorkout();
-    }
+    if (nextIdx !== -1) startRest(ex.rest || 90, true, nextIdx);
+    else finishWorkout();
   } else {
     state.currentSetNum = ex.completedSeries + 1;
-    refreshListItem(state.currentExIdx);
-    startRest(ex.rest || 60, false, state.currentExIdx);
+    refreshListItem(exIdx);
+    startRest(ex.rest || 60, false, exIdx);
   }
+}
+
+/* =================================================================
+   CARD DUPLO CONJUGADO
+   ================================================================= */
+function renderConjugatedCard(aIdx, bIdx, activeIdx) {
+  const aEx = state.exercises[aIdx];
+  const bEx = state.exercises[bIdx];
+  const panel = document.getElementById('wk-conj-panel');
+  const cardA = document.getElementById('wk-conj-a');
+  const cardB = document.getElementById('wk-conj-b');
+
+  panel.classList.add('show');
+
+  // Nomes
+  document.getElementById('wk-conj-a-name').textContent = aEx.name;
+  document.getElementById('wk-conj-b-name').textContent = bEx.name;
+
+  // Dots de série para A
+  const aDots = document.getElementById('wk-conj-a-dots');
+  aDots.innerHTML = '';
+  const aSeries = aEx.sets;
+  const aDone = aEx.completedSeries || 0;
+  for (let i = 1; i <= aSeries; i++) {
+    const d = document.createElement('div');
+    d.className = 'wk-conj-dot' + (i <= aDone ? ' done' : (activeIdx === aIdx && i === aDone + 1 ? ' active' : ''));
+    aDots.appendChild(d);
+  }
+
+  // Dots de série para B
+  const bDots = document.getElementById('wk-conj-b-dots');
+  bDots.innerHTML = '';
+  const bSeries = bEx.sets;
+  const bDone = bEx.completedSeries || 0;
+  for (let i = 1; i <= bSeries; i++) {
+    const d = document.createElement('div');
+    d.className = 'wk-conj-dot' + (i <= bDone ? ' done' : (activeIdx === bIdx && i === bDone + 1 ? ' active' : ''));
+    bDots.appendChild(d);
+  }
+
+  // Acende/apaga
+  if (activeIdx === aIdx) {
+    cardA.className = 'wk-conj-card active';
+    cardB.className = 'wk-conj-card inactive';
+  } else {
+    cardA.className = 'wk-conj-card inactive';
+    cardB.className = 'wk-conj-card active';
+  }
+}
+
+function hideConjugatedCard() {
+  document.getElementById('wk-conj-panel').classList.remove('show');
+}
+
+/* Detecta se exercício é conjugado e renderiza painel duplo */
+function maybeRenderConjugated(idx) {
+  const ex = state.exercises[idx];
+  if (!ex.conjugated) {
+    hideConjugatedCard();
+    return;
+  }
+  const partnerIdx = state.exercises.findIndex((e, i) => i !== idx && e.name === ex.conjugated);
+  if (partnerIdx === -1) { hideConjugatedCard(); return; }
+  const aIdx = idx < partnerIdx ? idx : partnerIdx;
+  const bIdx = idx < partnerIdx ? partnerIdx : idx;
+  renderConjugatedCard(aIdx, bIdx, idx);
 }
 
 function findNextPending() {
