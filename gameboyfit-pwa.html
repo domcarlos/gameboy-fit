@@ -665,8 +665,23 @@ body {
 .wk-timer { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 22px; color: #fff; letter-spacing: 2px; }
 .wk-timer.live { color: #00FFC2; text-shadow: 0 0 12px rgba(0,255,194,.4); }
 .wk-timer-lbl { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 2px; color: rgba(255,255,255,.4); margin-top: 2px; }
-.wk-pause { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.7); font-size: 13px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.wk-pause.paused { background: rgba(255,184,0,.1); border-color: rgba(255,184,0,.4); color: #FFB800; }
+.wk-pause {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.7);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.wk-pause::after { content: 'II'; }
+.wk-pause.paused {
+  background: rgba(255,184,0,.1);
+  border-color: rgba(255,184,0,.4);
+  color: #FFB800;
+}
+.wk-pause.paused::after { content: '▶'; font-size: 11px; letter-spacing: 0; }
 
 /* Progresso */
 .wk-progress { padding: 0 20px 14px; display: flex; align-items: center; gap: 10px; }
@@ -1524,7 +1539,7 @@ body {
         <div class="wk-timer live" id="wk-total-timer">00:00</div>
         <div class="wk-timer-lbl">TEMPO TOTAL</div>
       </div>
-      <div class="wk-close" id="wk-pause-btn" onclick="toggleGlobalPause()" style="font-size:11px; letter-spacing:1px; width:42px; font-family:'JetBrains Mono',monospace; font-weight:700;">II</div>
+      <div class="wk-pause" id="wk-pause-btn" onclick="toggleGlobalPause()"></div>
     </div>
 
     <div class="wk-progress">
@@ -1858,6 +1873,7 @@ const state = {
 
   // Exercícios simulados
   exercises: [],
+  conjugatedPending: false, // true quando acabou a parte A do conjugado, aguarda parte B
   allPrograms: {
     'A': [
       { name:'HIP THRUST BARRA', desc:'GLÚTEO MÁXIMO · POSTERIOR · CORE', sets:4, reps:8, rest:90, load:60, lastLoad:'última: —', isFoco:true, conjugated:null },
@@ -1952,6 +1968,7 @@ function selectProgram(label, title, focus, exCount, duration, muscles) {
   buildExerciseList();
   loadExercise(0);
   startGlobalTimer();
+  requestWakeLock();
   goTo('workout');
 }
 
@@ -1970,6 +1987,8 @@ function resetWorkout() {
   state.isGlobalPaused = false;
   state.completedSets = 0;
   state.currentLoad = 60;
+  state.conjugatedPending = false;
+  state._conjugatedReturnIdx = null;
 
   // Reset status de cada exercício
   state.exercises.forEach(ex => {
@@ -1987,7 +2006,7 @@ function resetWorkout() {
   const restCard = document.getElementById('wk-rest');
   if (restCard) restCard.classList.remove('show');
   const pauseBtn = document.getElementById('wk-pause-btn');
-  if (pauseBtn) { pauseBtn.textContent = '⏸'; pauseBtn.className = 'wk-pause'; }
+  if (pauseBtn) { pauseBtn.className = 'wk-pause'; }
 }
 
 function buildExerciseList() {
@@ -2209,6 +2228,8 @@ function startSet() {
   state.isSetPaused = false;
   state.setSec = 0;
 
+  // Garante que descanso está escondido
+  document.getElementById('wk-rest').classList.remove('show');
   document.getElementById('wk-cta-idle').style.display = 'none';
   document.getElementById('wk-timer-mode').classList.add('show');
   document.getElementById('wk-t-val').textContent = '00:00';
@@ -2250,12 +2271,10 @@ function toggleGlobalPause() {
   const btn = document.getElementById('wk-pause-btn');
   const timer = document.getElementById('wk-total-timer');
   if (state.isGlobalPaused) {
-    btn.textContent = '▶';
-    btn.className = 'wk-pause paused';
+    btn.classList.add('paused');
     timer.className = 'wk-timer';
   } else {
-    btn.textContent = '⏸';
-    btn.className = 'wk-pause';
+    btn.classList.remove('paused');
     timer.className = 'wk-timer live';
   }
 }
@@ -2271,35 +2290,76 @@ function finishSet() {
   ex.usedLoad = state.currentLoad;
 
   const isLastSetOfEx = ex.completedSeries >= ex.sets;
-  const allDone = state.exercises.every(e => e.status === 'done' || (e === ex && isLastSetOfEx));
 
+  // --- LÓGICA DE CONJUGADO ---
+  // Se este exercício tem par conjugado e ainda não fez o par desta série
+  if (ex.conjugated && !state.conjugatedPending) {
+    // Acabou a parte A → vai para parte B sem descanso
+    const partnerIdx = state.exercises.findIndex((e, i) => i !== state.currentExIdx && e.name === ex.conjugated);
+    if (partnerIdx !== -1) {
+      const partner = state.exercises[partnerIdx];
+      // Parte B recebe a mesma série que A
+      state.conjugatedPending = true;
+      state._conjugatedReturnIdx = state.currentExIdx;
+
+      state.exercises[partnerIdx].status = 'active';
+      state.currentExIdx = partnerIdx;
+      state.currentSetNum = (partner.completedSeries || 0) + 1;
+      refreshListItem(state._conjugatedReturnIdx);
+      refreshListItem(partnerIdx);
+      loadExercise(partnerIdx);
+      return; // sem descanso — vai direto para B
+    }
+  }
+
+  // Após completar parte B do conjugado (ou exercício normal)
+  if (state.conjugatedPending) {
+    state.conjugatedPending = false;
+    const returnIdx = state._conjugatedReturnIdx;
+    const returnEx = state.exercises[returnIdx];
+    const isLastSetOfPair = ex.completedSeries >= ex.sets;
+
+    if (isLastSetOfPair) {
+      // Par completo → ambos done
+      ex.status = 'done';
+      returnEx.status = 'done';
+      refreshListItem(state.currentExIdx);
+      refreshListItem(returnIdx);
+    } else {
+      // Volta para A para próxima série do par
+      state.exercises[returnIdx].status = 'active';
+      state.currentExIdx = returnIdx;
+      state.currentSetNum = (returnEx.completedSeries || 0) + 1;
+      refreshListItem(state.currentExIdx);
+    }
+
+    const allDone = state.exercises.every(e => e.status === 'done');
+    if (allDone) { finishWorkout(); return; }
+
+    const nextPending = isLastSetOfPair ? findNextPending() : returnIdx;
+    const restSecs = ex.rest > 0 ? ex.rest : returnEx.rest;
+    startRest(restSecs || 90, isLastSetOfPair, isLastSetOfPair ? nextPending : returnIdx);
+    return;
+  }
+
+  // --- EXERCÍCIO NORMAL ---
   if (isLastSetOfEx) {
-    // Exercício completo
     ex.status = 'done';
     refreshListItem(state.currentExIdx);
 
-    // Verifica se todos estão done
     const totalDone = state.exercises.filter(e => e.status === 'done').length;
-    if (totalDone === state.exercises.length) {
-      finishWorkout();
-      return;
-    }
+    if (totalDone === state.exercises.length) { finishWorkout(); return; }
 
-    // Avança para próximo exercício pendente automaticamente
     const nextIdx = findNextPending();
     if (nextIdx !== -1) {
-      state.exercises[nextIdx].status = 'active';
-      state.currentExIdx = nextIdx;
-      startRest(ex.rest, true, nextIdx);
+      startRest(ex.rest || 90, true, nextIdx);
     } else {
-      // Todos done
       finishWorkout();
     }
   } else {
-    // Próxima série
     state.currentSetNum = ex.completedSeries + 1;
     refreshListItem(state.currentExIdx);
-    startRest(ex.rest, false, state.currentExIdx);
+    startRest(ex.rest || 60, false, state.currentExIdx);
   }
 }
 
@@ -2315,29 +2375,29 @@ function findNextPending() {
   return -1;
 }
 
-/* DESCANSO */
 function startRest(seconds, newExercise, targetIdx) {
   state.restSec = seconds;
   state._restTargetIdx = targetIdx;
   state._restIsNewEx = newExercise;
 
-  // Esconde CTA e timer, mostra descanso inline
+  // Garante que CTA e timer estão escondidos ANTES de mostrar descanso
   document.getElementById('wk-cta-idle').style.display = 'none';
   document.getElementById('wk-timer-mode').classList.remove('show');
   document.getElementById('wk-rest').classList.add('show');
-  document.getElementById('wk-rest-timer').textContent = state.restSec;
+  document.getElementById('wk-rest-timer').textContent = seconds;
 
   const nextEx = state.exercises[targetIdx];
   document.getElementById('wk-rest-next-name').textContent = nextEx ? nextEx.name : '—';
 
   // Se novo exercício, já atualiza o card enquanto descansa
-  if (newExercise) {
+  if (newExercise && targetIdx !== state.currentExIdx) {
     state.exercises[targetIdx].status = 'active';
     refreshListItem(targetIdx);
     scrollListToActive(targetIdx);
     loadExercise(targetIdx);
   }
 
+  clearInterval(state.restInterval);
   state.restInterval = setInterval(() => {
     if (state.isGlobalPaused) return;
     state.restSec--;
@@ -2350,20 +2410,25 @@ function startRest(seconds, newExercise, targetIdx) {
 function endRest() {
   clearInterval(state.restInterval);
   document.getElementById('wk-rest').classList.remove('show');
+
   const idx = state._restTargetIdx;
   const isNew = state._restIsNewEx;
+
   if (!isNew) {
-    // mesma série — só mostra CTA
+    // Mesma série — atualiza barras e mostra CTA
     state.currentSetNum = (state.exercises[idx].completedSeries || 0) + 1;
     updateSeriesBars(state.currentSetNum, state.exercises[idx].sets);
     refreshListItem(idx);
   }
+
+  // CTA sempre aparece ao fim do descanso
   document.getElementById('wk-cta-idle').style.display = 'block';
   document.getElementById('wk-timer-mode').classList.remove('show');
 }
 
 function skipRest() {
   clearInterval(state.restInterval);
+  state.restSec = 0;
   endRest();
 }
 
@@ -2391,12 +2456,14 @@ function exitSave() {
 function exitNoSave() {
   document.getElementById('exit-modal').classList.remove('show');
   stopAll();
+  releaseWakeLock();
   goHome();
 }
 
 /* FINALIZAR TREINO → REPORT */
 function finishWorkout() {
   stopAll();
+  releaseWakeLock();
 
   // Salva no histórico
   const now = new Date();
@@ -2610,6 +2677,31 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js').catch(() => {});
   });
 }
+
+// Wake Lock — mantém tela ligada durante o treino
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch(e) {}
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+
+// Reativa wake lock se o app voltar ao foco (iOS libera ao minimizar)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.currentScreen === 'workout') {
+    requestWakeLock();
+  }
+});
 </script>
 
 <!-- ======================================================
