@@ -752,26 +752,21 @@ body {
 .wk-t-btn:active { transform: scale(.97); }
 .wk-t-btn.finish { background: rgba(255,56,96,.08); border-color: rgba(255,56,96,.35); color: #FF3860; }
 
-/* DESCANSO — overlay no painel */
+/* DESCANSO — inline no lugar do CTA, não fullscreen */
 .wk-rest-overlay {
   display: none;
-  position: absolute;
-  inset: 0;
-  background: rgba(5,5,8,.96);
-  z-index: 20;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(135deg, rgba(77,158,255,.08), rgba(77,158,255,.02));
+  border: 1.5px solid rgba(77,158,255,.4);
+  border-radius: 14px;
+  padding: 14px 16px;
   text-align: center;
-  gap: 10px;
-  padding: 20px;
 }
-.wk-rest-overlay.show { display: flex; }
-.wk-rest-lbl { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 3px; color: rgba(77,158,255,.9); font-weight: 700; }
-.wk-rest-timer { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 64px; color: #4D9EFF; text-shadow: 0 0 30px rgba(77,158,255,.5); letter-spacing: 3px; line-height: 1; }
-.wk-rest-next { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: 1px; }
+.wk-rest-overlay.show { display: block; }
+.wk-rest-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 3px; color: rgba(77,158,255,.9); font-weight: 700; margin-bottom: 4px; }
+.wk-rest-timer { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 42px; color: #4D9EFF; text-shadow: 0 0 20px rgba(77,158,255,.5); letter-spacing: 3px; line-height: 1; margin: 4px 0; }
+.wk-rest-next { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: 1px; margin-top: 4px; }
 .wk-rest-next b { color: rgba(255,255,255,.7); }
-.wk-skip { display: inline-block; margin-top: 8px; padding: 10px 20px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.5); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; cursor: pointer; }
+.wk-skip { display: inline-block; margin-top: 8px; padding: 8px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.5); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; cursor: pointer; }
 
 /* LISTA DE EXERCÍCIOS — área scrollável */
 .wk-list-area {
@@ -882,8 +877,79 @@ body {
   font-weight: 700;
 }
 
-/* Sem next preview separado — está na lista */
-.wk-next { display: none; }
+/* Foco badge — só no card ativo, não na lista */
+.wk-item-foco { display: none; }
+
+/* Conjugado na lista — sem margem entre pares */
+.wk-ex-item.conjugated-top { border-radius: 14px 14px 4px 4px; margin-bottom: 1px; }
+.wk-ex-item.conjugated-bottom { border-radius: 4px 4px 14px 14px; margin-top: 0; border-top: 1px dashed rgba(0,255,194,.2); }
+.wk-conjugated-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: #00FFC2;
+  background: rgba(0,255,194,.1);
+  border: 1px solid rgba(0,255,194,.2);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Modal de saída do treino */
+.exit-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.8);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+}
+.exit-modal-backdrop.show { display: flex; }
+.exit-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #0E0E14;
+  border-radius: 24px 24px 0 0;
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 20px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.exit-modal-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: .5px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.exit-modal-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,.4);
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.exit-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.exit-btn:active { transform: scale(.98); }
+.exit-btn-save { background: linear-gradient(135deg, #00FFC2, #00D9A7); color: #04110d; }
+.exit-btn-nosave { background: rgba(255,56,96,.1); border: 1.5px solid rgba(255,56,96,.35); color: #FF3860; }
+.exit-btn-cancel { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.6); }
 
 /* ============================================================
    SCREEN 4 — REPORT (relatório final)
@@ -1132,10 +1198,66 @@ body {
 .hist-item-vol { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(0,255,194,.7); letter-spacing: .5px; }
 .hist-item-pr { background: rgba(255,56,96,.1); border: 1px solid rgba(255,56,96,.3); color: #FF3860; font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
 
+/* Ações do histórico */
+.hist-item-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+.hist-action-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  color: rgba(255,255,255,.6);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  font-weight: 600;
+  text-align: center;
+}
+.hist-action-btn.view { border-color: rgba(0,255,194,.25); color: #00FFC2; background: rgba(0,255,194,.05); }
+.hist-action-btn.del { border-color: rgba(255,56,96,.25); color: #FF3860; background: rgba(255,56,96,.05); }
+
 .hist-empty { text-align: center; padding: 60px 20px; }
 .hist-empty-icon { font-size: 48px; opacity: .3; margin-bottom: 16px; }
 .hist-empty-title { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 16px; color: rgba(255,255,255,.5); }
 .hist-empty-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,.3); margin-top: 8px; letter-spacing: .5px; }
+.detail-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(10px);
+  z-index: 200;
+  overflow-y: auto;
+}
+.detail-modal-backdrop.show { display: block; }
+.detail-modal {
+  min-height: 100vh;
+  padding: 50px 20px 60px;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.detail-close {
+  align-self: flex-end;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.7);
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
 </style>
 </head>
 <body>
@@ -1233,10 +1355,44 @@ body {
           <div class="cart-cat-label">ELITE</div>
         </div>
 
-        <!-- Imagem placeholder -->
+        <!-- Ilustração: bola de futebol com raios -->
         <div class="cart-image">
           <div class="cart-image-placeholder">
-            <div class="cart-placeholder-icon">🏃</div>
+            <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg" style="width:110px;filter:drop-shadow(0 0 14px rgba(0,255,194,.5))">
+              <!-- Raios / sol -->
+              <g stroke="#00FFC2" stroke-linecap="round" opacity=".7">
+                <line x1="60" y1="12" x2="60" y2="2" stroke-width="2.5"/>
+                <line x1="60" y1="118" x2="60" y2="128" stroke-width="2.5"/>
+                <line x1="12" y1="65" x2="2" y2="65" stroke-width="2.5"/>
+                <line x1="108" y1="65" x2="118" y2="65" stroke-width="2.5"/>
+                <line x1="24" y1="24" x2="17" y2="17" stroke-width="2"/>
+                <line x1="96" y1="24" x2="103" y2="17" stroke-width="2"/>
+                <line x1="24" y1="106" x2="17" y2="113" stroke-width="2"/>
+                <line x1="96" y1="106" x2="103" y2="113" stroke-width="2"/>
+                <line x1="38" y1="14" x2="34" y2="5" stroke-width="1.5" opacity=".5"/>
+                <line x1="82" y1="14" x2="86" y2="5" stroke-width="1.5" opacity=".5"/>
+                <line x1="14" y1="42" x2="5" y2="38" stroke-width="1.5" opacity=".5"/>
+                <line x1="106" y1="42" x2="115" y2="38" stroke-width="1.5" opacity=".5"/>
+                <line x1="14" y1="88" x2="5" y2="92" stroke-width="1.5" opacity=".5"/>
+                <line x1="106" y1="88" x2="115" y2="92" stroke-width="1.5" opacity=".5"/>
+              </g>
+              <!-- Bola de futebol clássica -->
+              <circle cx="60" cy="65" r="36" fill="#050a08" stroke="#00FFC2" stroke-width="1.5"/>
+              <!-- Pentágonos da bola -->
+              <polygon points="60,36 71,44 67,57 53,57 49,44" fill="#00FFC2" opacity=".15" stroke="#00FFC2" stroke-width="1"/>
+              <polygon points="60,36 71,44 67,57 53,57 49,44" fill="none" stroke="#00FFC2" stroke-width="1"/>
+              <polygon points="82,52 93,60 89,73 77,70 74,57" fill="none" stroke="#00FFC2" stroke-width=".8" opacity=".7"/>
+              <polygon points="38,52 27,60 31,73 43,70 46,57" fill="none" stroke="#00FFC2" stroke-width=".8" opacity=".7"/>
+              <polygon points="72,77 80,88 70,95 52,92 48,82 57,73" fill="none" stroke="#00FFC2" stroke-width=".8" opacity=".6"/>
+              <polygon points="48,77 40,88 50,95 68,92 72,82 63,73" fill="none" stroke="#00FFC2" stroke-width=".8" opacity=".6"/>
+              <!-- Linhas da bola -->
+              <line x1="60" y1="36" x2="49" y2="44" stroke="#00FFC2" stroke-width=".8" opacity=".5"/>
+              <line x1="60" y1="36" x2="71" y2="44" stroke="#00FFC2" stroke-width=".8" opacity=".5"/>
+              <line x1="53" y1="57" x2="48" y2="82" stroke="#00FFC2" stroke-width=".8" opacity=".5"/>
+              <line x1="67" y1="57" x2="72" y2="82" stroke="#00FFC2" stroke-width=".8" opacity=".5"/>
+              <!-- Círculo externo (brilho) -->
+              <circle cx="60" cy="65" r="36" fill="none" stroke="rgba(0,255,194,.3)" stroke-width=".5"/>
+            </svg>
           </div>
         </div>
 
@@ -1362,21 +1518,13 @@ body {
   <!-- PAINEL FIXO -->
   <div class="wk-panel" style="position:relative;">
 
-    <!-- Overlay de descanso (sobre o painel) -->
-    <div class="wk-rest-overlay" id="wk-rest">
-      <div class="wk-rest-lbl">DESCANSO</div>
-      <div class="wk-rest-timer" id="wk-rest-timer">90</div>
-      <div class="wk-rest-next">A SEGUIR: <b id="wk-rest-next-name">—</b></div>
-      <div class="wk-skip" onclick="skipRest()">PULAR DESCANSO →</div>
-    </div>
-
     <div class="wk-topbar">
       <div class="wk-close" onclick="confirmExit()">✕</div>
       <div class="wk-timer-block">
         <div class="wk-timer live" id="wk-total-timer">00:00</div>
         <div class="wk-timer-lbl">TEMPO TOTAL</div>
       </div>
-      <div class="wk-pause" id="wk-pause-btn" onclick="toggleGlobalPause()">⏸</div>
+      <div class="wk-close" id="wk-pause-btn" onclick="toggleGlobalPause()" style="font-size:11px; letter-spacing:1px; width:42px; font-family:'JetBrains Mono',monospace; font-weight:700;">II</div>
     </div>
 
     <div class="wk-progress">
@@ -1455,6 +1603,14 @@ body {
         </div>
       </div>
 
+      <!-- DESCANSO — aparece no lugar do CTA -->
+      <div class="wk-rest-overlay" id="wk-rest">
+        <div class="wk-rest-lbl">DESCANSO</div>
+        <div class="wk-rest-timer" id="wk-rest-timer">90</div>
+        <div class="wk-rest-next">A SEGUIR: <b id="wk-rest-next-name">—</b></div>
+        <div class="wk-skip" onclick="skipRest()">PULAR DESCANSO →</div>
+      </div>
+
       <div class="wk-timer-mode" id="wk-timer-mode">
         <div class="wk-t-status" id="wk-t-status">EXECUTANDO</div>
         <div class="wk-t-val" id="wk-t-val">00:00</div>
@@ -1479,6 +1635,17 @@ body {
 
   <!-- placeholder necessário para o JS antigo -->
   <div class="wk-next" id="wk-next" style="display:none"></div>
+</div>
+
+<!-- MODAL DE SAÍDA DO TREINO -->
+<div class="exit-modal-backdrop" id="exit-modal">
+  <div class="exit-modal">
+    <div class="exit-modal-title">ENCERRAR TREINO?</div>
+    <div class="exit-modal-sub" id="exit-modal-sub">00:00 de treino · 0 séries completas</div>
+    <button class="exit-btn exit-btn-save" onclick="exitSave()">SALVAR E SAIR</button>
+    <button class="exit-btn exit-btn-nosave" onclick="exitNoSave()">SAIR SEM SALVAR</button>
+    <button class="exit-btn exit-btn-cancel" onclick="exitCancel()">CANCELAR — CONTINUAR</button>
+  </div>
 </div>
 
 <!-- ======================================================
@@ -1690,18 +1857,34 @@ const state = {
   completedSets: 0,
 
   // Exercícios simulados
-  exercises: [
-    { name:'HIP THRUST BARRA', desc:'GLÚTEO MÁXIMO · POSTERIOR · CORE', sets:4, reps:8, rest:90, load:60, lastLoad:'57.5kg ▲ +2.5', isFoco:true, next:'Stiff / RDL Barra', nextStats:'3 × 8 · 45kg' },
-    { name:'STIFF / RDL BARRA', desc:'POSTERIOR DE COXA · GLÚTEO', sets:3, reps:8, rest:90, load:45, lastLoad:'42.5kg ▲ +2.5', isFoco:false, next:'Nordic Curl', nextStats:'3 × 6 · corp.' },
-    { name:'NORDIC CURL', desc:'ISQUIOTIBIAL · PREVENÇÃO DE LESÃO', sets:3, reps:6, rest:120, load:0, lastLoad:'corporal', isFoco:true, next:'Afundo Unilateral', nextStats:'3 × 8 · 36kg' },
-    { name:'AFUNDO UNILATERAL', desc:'GLÚTEO · QUADRÍCEPS · EQUILÍBRIO', sets:3, reps:8, rest:75, load:36, lastLoad:'36kg —', isFoco:false, next:'Mesa Flexora', nextStats:'3 × 10 · 30kg' },
-    { name:'MESA FLEXORA', desc:'POSTERIOR DE COXA · ISOLADO', sets:3, reps:10, rest:75, load:30, lastLoad:'35kg ▼ -5', isFoco:false, next:'Puxada Alta', nextStats:'4 × 8 · 65kg' },
-    { name:'PUXADA ALTA POLIA', desc:'COSTAS · BÍCEPS', sets:4, reps:8, rest:90, load:65, lastLoad:'65kg —', isFoco:false, next:'Remada Curvada', nextStats:'3 × 8 · 40kg' },
-    { name:'REMADA CURVADA', desc:'COSTAS · TRAPÉZIO · ROMBÓIDE', sets:3, reps:8, rest:90, load:40, lastLoad:'40kg —', isFoco:false, next:'Fly Invertido', nextStats:'3 × 12 · 50kg' },
-    { name:'FLY INVERTIDO', desc:'DELTÓIDE POSTERIOR · SAÚDE ESCAPULAR', sets:3, reps:12, rest:60, load:50, lastLoad:'50kg —', isFoco:true, next:'Oblíquo + Infra Bosu', nextStats:'3 × 20 · corp.' },
-    { name:'OBLÍQUO + INFRA BOSU', desc:'CORE · OBLÍQUO · INFRAESPINAL', sets:3, reps:20, rest:60, load:0, lastLoad:'corporal', isFoco:false, next:'Pallof Press', nextStats:'3 × 12 · cada lado' },
-    { name:'PALLOF PRESS', desc:'CORE · ANTI-ROTAÇÃO · PROTEÇÃO LOMBAR', sets:3, reps:12, rest:60, load:0, lastLoad:'corporal', isFoco:true, next:null, nextStats:null },
-  ],
+  exercises: [],
+  allPrograms: {
+    'A': [
+      { name:'HIP THRUST BARRA', desc:'GLÚTEO MÁXIMO · POSTERIOR · CORE', sets:4, reps:8, rest:90, load:60, lastLoad:'última: —', isFoco:true, conjugated:null },
+      { name:'STIFF / RDL BARRA', desc:'POSTERIOR DE COXA · GLÚTEO', sets:3, reps:8, rest:90, load:45, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'NORDIC CURL', desc:'ISQUIOTIBIAL · PREVENÇÃO DE LESÃO', sets:3, reps:6, rest:120, load:0, lastLoad:'última: —', isFoco:true, conjugated:null },
+      { name:'AFUNDO UNILATERAL', desc:'GLÚTEO · QUADRÍCEPS · EQUILÍBRIO', sets:3, reps:8, rest:75, load:36, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'MESA FLEXORA', desc:'POSTERIOR DE COXA · ISOLADO', sets:3, reps:10, rest:75, load:30, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'PUXADA ALTA POLIA', desc:'COSTAS · BÍCEPS', sets:4, reps:8, rest:90, load:65, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'REMADA CURVADA', desc:'COSTAS · TRAPÉZIO · ROMBÓIDE', sets:3, reps:8, rest:90, load:40, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'FLY INVERTIDO MÁQUINA', desc:'DELTÓIDE POSTERIOR · SAÚDE ESCAPULAR', sets:3, reps:12, rest:60, load:50, lastLoad:'última: —', isFoco:true, conjugated:null },
+      { name:'OBLÍQUO + INFRA BOSU', desc:'CORE · OBLÍQUO', sets:3, reps:20, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'PALLOF PRESS', desc:'CORE · ANTI-ROTAÇÃO · PROTEÇÃO LOMBAR', sets:3, reps:12, rest:60, load:0, lastLoad:'última: —', isFoco:true, conjugated:null },
+    ],
+    'B': [
+      { name:'AGACHAMENTO (SMITH/LIVRE)', desc:'QUADRÍCEPS · POTÊNCIA DE ARRANQUE', sets:4, reps:6, rest:120, load:50, lastLoad:'última: —', isFoco:true, conjugated:null },
+      { name:'LEG PRESS 45°', desc:'QUADRÍCEPS · GLÚTEO · SEM DESCANSO → GÊMEOS', sets:3, reps:8, rest:0, load:240, lastLoad:'última: —', isFoco:false, conjugated:'GÊMEOS NO LEG PRESS' },
+      { name:'GÊMEOS NO LEG PRESS', desc:'PANTURRILHA · AMPLITUDE COMPLETA', sets:3, reps:15, rest:90, load:150, lastLoad:'última: —', isFoco:false, conjugated:'LEG PRESS 45°' },
+      { name:'CADEIRA EXTENSORA UNILATERAL', desc:'QUADRÍCEPS · ISOLADO', sets:3, reps:10, rest:75, load:50, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'SUPINO RETO LIVRE', desc:'PEITORAL · FORÇA BASE', sets:4, reps:6, rest:120, load:45, lastLoad:'última: —', isFoco:true, conjugated:null },
+      { name:'SUPINO INCLINADO HALTERES', desc:'PEITORAL SUPERIOR · OMBRO ANTERIOR', sets:3, reps:8, rest:90, load:20, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'DESENVOLVIMENTO MILITAR HALTERES', desc:'DELTÓIDE · OMBROS', sets:3, reps:8, rest:90, load:16, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'ROTAÇÃO INTERNA + EXTERNA POLIA', desc:'MANGUITO ROTADOR · SAÚDE ARTICULAR', sets:3, reps:12, rest:60, load:5, lastLoad:'última: —', isFoco:true, conjugated:null },
+      { name:'ROSCA DIRETA BARRA', desc:'BÍCEPS · FORÇA', sets:3, reps:8, rest:75, load:27.5, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'ROSCA MARTELO HALTERE', desc:'BÍCEPS · BRAQUIAL', sets:3, reps:10, rest:75, load:14, lastLoad:'última: —', isFoco:false, conjugated:null },
+      { name:'TRÍCEPS TESTA BARRA', desc:'TRÍCEPS · FORÇA', sets:3, reps:8, rest:75, load:27.5, lastLoad:'última: —', isFoco:false, conjugated:null },
+    ]
+  },
 };
 
 /* =================================================================
@@ -1756,8 +1939,15 @@ function selectCartridge(id, name, author, sheets, weeks) {
    ================================================================= */
 function selectProgram(label, title, focus, exCount, duration, muscles) {
   state.program = { label, title, focus, exCount, duration, muscles };
+  // Carrega exercícios do programa selecionado
+  const template = state.allPrograms[label] || state.allPrograms['A'];
+  state.exercises = template.map(ex => ({
+    ...ex,
+    status: 'pending',
+    completedSeries: 0,
+    usedLoad: ex.load,
+  }));
   resetWorkout();
-  // Primeiro exercício fica active
   state.exercises[0].status = 'active';
   buildExerciseList();
   loadExercise(0);
@@ -1807,11 +1997,20 @@ function buildExerciseList() {
 
   state.exercises.forEach((ex, idx) => {
     const item = document.createElement('div');
-    item.className = 'wk-ex-item state-' + (ex.status || 'pending');
+
+    // Classes de estado e conjugado
+    let extraClass = '';
+    if (ex.conjugated) {
+      const prevEx = state.exercises[idx - 1];
+      const nextEx = state.exercises[idx + 1];
+      if (nextEx && nextEx.conjugated === ex.name) extraClass = 'conjugated-top';
+      else if (prevEx && prevEx.conjugated === ex.name) extraClass = 'conjugated-bottom';
+    }
+    item.className = `wk-ex-item state-${ex.status || 'pending'} ${extraClass}`;
     item.id = 'wk-item-' + idx;
     item.onclick = () => selectExercise(idx);
 
-    // Calcular pills de série
+    // Pills de série
     let pillsHtml = '';
     for (let s = 1; s <= ex.sets; s++) {
       const done = s <= (ex.completedSeries || 0);
@@ -1819,13 +2018,18 @@ function buildExerciseList() {
       pillsHtml += `<div class="sp${done ? ' done' : active ? ' active' : ''}"></div>`;
     }
 
+    // Status direita
     const statusHtml = ex.status === 'done'
       ? `<div class="wk-item-done-check">✓</div>`
-      : ex.status === 'active'
-      ? `<div class="wk-item-status"><div class="series-pills">${pillsHtml}</div><div class="wk-item-tap">EM EXECUÇÃO</div></div>`
-      : `<div class="wk-item-status"><div class="series-pills">${pillsHtml}</div></div>`;
+      : `<div class="wk-item-status">
+           <div class="series-pills">${pillsHtml}</div>
+           ${ex.status === 'active' ? '<div class="wk-item-tap">EM EXECUÇÃO</div>' : ''}
+         </div>`;
 
-    const focoHtml = ex.isFoco ? `<div class="wk-item-foco">★ FOCO</div>` : '';
+    // Badge conjugado (só se for conjugado)
+    const conjHtml = ex.conjugated
+      ? `<span class="wk-conjugated-label">CONJUGADO</span>`
+      : '';
 
     item.innerHTML = `
       <div class="wk-item-num">${String(idx + 1).padStart(2,'0')}</div>
@@ -1840,11 +2044,13 @@ function buildExerciseList() {
         </svg>
       </div>
       <div class="wk-item-info">
-        <div class="wk-item-name">${ex.name}</div>
-        <div class="wk-item-meta">${ex.sets} × ${ex.reps} · ${ex.load > 0 ? ex.load + 'kg' : 'corporal'} · ${ex.rest}s</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="wk-item-name">${ex.name}</div>
+          ${conjHtml}
+        </div>
+        <div class="wk-item-meta">${ex.sets} × ${ex.reps} · ${ex.load > 0 ? ex.load + 'kg' : 'corporal'} · ${ex.rest > 0 ? ex.rest + 's' : 'sem descanso'}</div>
       </div>
       ${statusHtml}
-      ${focoHtml}
     `;
     container.appendChild(item);
   });
@@ -2115,12 +2321,22 @@ function startRest(seconds, newExercise, targetIdx) {
   state._restTargetIdx = targetIdx;
   state._restIsNewEx = newExercise;
 
-  const restEl = document.getElementById('wk-rest');
-  restEl.classList.add('show');
+  // Esconde CTA e timer, mostra descanso inline
+  document.getElementById('wk-cta-idle').style.display = 'none';
+  document.getElementById('wk-timer-mode').classList.remove('show');
+  document.getElementById('wk-rest').classList.add('show');
   document.getElementById('wk-rest-timer').textContent = state.restSec;
 
   const nextEx = state.exercises[targetIdx];
   document.getElementById('wk-rest-next-name').textContent = nextEx ? nextEx.name : '—';
+
+  // Se novo exercício, já atualiza o card enquanto descansa
+  if (newExercise) {
+    state.exercises[targetIdx].status = 'active';
+    refreshListItem(targetIdx);
+    scrollListToActive(targetIdx);
+    loadExercise(targetIdx);
+  }
 
   state.restInterval = setInterval(() => {
     if (state.isGlobalPaused) return;
@@ -2134,23 +2350,16 @@ function startRest(seconds, newExercise, targetIdx) {
 function endRest() {
   clearInterval(state.restInterval);
   document.getElementById('wk-rest').classList.remove('show');
-
   const idx = state._restTargetIdx;
   const isNew = state._restIsNewEx;
-
-  if (isNew) {
-    state.exercises[idx].status = 'active';
-    refreshListItem(idx);
-    scrollListToActive(idx);
-    loadExercise(idx);
-  } else {
-    // Mesma série
+  if (!isNew) {
+    // mesma série — só mostra CTA
     state.currentSetNum = (state.exercises[idx].completedSeries || 0) + 1;
     updateSeriesBars(state.currentSetNum, state.exercises[idx].sets);
     refreshListItem(idx);
-    document.getElementById('wk-cta-idle').style.display = 'block';
-    document.getElementById('wk-timer-mode').classList.remove('show');
   }
+  document.getElementById('wk-cta-idle').style.display = 'block';
+  document.getElementById('wk-timer-mode').classList.remove('show');
 }
 
 function skipRest() {
@@ -2166,11 +2375,23 @@ function adjustLoad(delta) {
   state.exercises[state.currentExIdx].usedLoad = state.currentLoad;
 }
 
-/* CONFIRMAR SAÍDA */
+/* CONFIRMAR SAÍDA — modal com 3 opções */
 function confirmExit() {
-  if (confirm('Encerrar treino? O progresso atual será salvo.')) {
-    finishWorkout();
-  }
+  const sub = document.getElementById('exit-modal-sub');
+  if (sub) sub.textContent = fmt(state.totalSec) + ' de treino · ' + state.completedSets + ' séries completas';
+  document.getElementById('exit-modal').classList.add('show');
+}
+function exitCancel() {
+  document.getElementById('exit-modal').classList.remove('show');
+}
+function exitSave() {
+  document.getElementById('exit-modal').classList.remove('show');
+  finishWorkout();
+}
+function exitNoSave() {
+  document.getElementById('exit-modal').classList.remove('show');
+  stopAll();
+  goHome();
 }
 
 /* FINALIZAR TREINO → REPORT */
@@ -2264,24 +2485,76 @@ function renderHistory() {
     return;
   }
 
-  list.innerHTML = sessions.map(s => `
-    <div class="hist-item">
-      <div class="hist-item-left">
-        <div class="hist-item-letter">${s.program}</div>
-        <div class="hist-item-date">${s.date}</div>
+  list.innerHTML = sessions.map((s, idx) => `
+    <div class="hist-item" style="flex-direction:column;align-items:stretch;cursor:default;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="hist-item-left">
+          <div class="hist-item-letter">${s.program}</div>
+          <div class="hist-item-date">${s.date}</div>
+        </div>
+        <div class="hist-item-info">
+          <div class="hist-item-name">${s.programTitle}</div>
+          <div class="hist-item-cart">${s.cartridge}</div>
+          <div class="hist-item-meta">${s.sets}/${s.totalSets} séries · ${Math.round(s.volume / 100) / 10}t</div>
+        </div>
+        <div class="hist-item-right">
+          <div class="hist-item-duration">${fmt(s.duration)}</div>
+          <div class="hist-item-vol">${Math.round(s.volume)} kg</div>
+          ${s.hasPR ? '<div class="hist-item-pr">★ PR</div>' : ''}
+        </div>
       </div>
-      <div class="hist-item-info">
-        <div class="hist-item-name">${s.programTitle}</div>
-        <div class="hist-item-cart">${s.cartridge}</div>
-        <div class="hist-item-meta">${s.sets}/${s.totalSets} séries · ${Math.round(s.volume / 100) / 10}t</div>
-      </div>
-      <div class="hist-item-right">
-        <div class="hist-item-duration">${fmt(s.duration)}</div>
-        <div class="hist-item-vol">${Math.round(s.volume)} kg</div>
-        ${s.hasPR ? '<div class="hist-item-pr">★ PR</div>' : ''}
+      <div class="hist-item-actions">
+        <button class="hist-action-btn view" onclick="openDetailModal(${idx})">VER DETALHES</button>
+        <button class="hist-action-btn del" onclick="deleteSession(${idx})">DELETAR</button>
       </div>
     </div>
   `).join('');
+}
+
+function openDetailModal(idx) {
+  const s = state.history.sessions[idx];
+  if (!s) return;
+  const content = document.getElementById('detail-content');
+  content.innerHTML = `
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:48px;margin-bottom:10px;">🏆</div>
+      <div style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:22px;">MISSÃO COMPLETA</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;margin-top:6px;">Treino ${s.program} · ${s.programTitle}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(0,255,194,.6);margin-top:4px;">${s.date} · ${s.cartridge}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      ${detailStat('DURAÇÃO', fmt(s.duration))}
+      ${detailStat('VOLUME', Math.round(s.volume / 100) / 10 + 't')}
+      ${detailStat('SÉRIES', s.sets + '/' + s.totalSets)}
+      ${detailStat('CALORIAS', '487 kcal')}
+    </div>
+    ${s.hasPR ? `
+    <div style="background:linear-gradient(180deg,rgba(255,56,96,.06),rgba(255,56,96,.02));border:1px solid rgba(255,56,96,.2);border-radius:14px;padding:14px;margin-bottom:14px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;color:rgba(255,56,96,.8);margin-bottom:6px;">RECORDE QUEBRADO</div>
+      <div style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:16px;">Personal Record</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#00FFC2;margin-top:8px;font-weight:700;">✓ BOSS DEFEATED</div>
+    </div>` : ''}
+    <button onclick="closeDetailModal()" style="width:100%;padding:16px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;cursor:pointer;margin-top:4px;">FECHAR</button>
+  `;
+  document.getElementById('detail-modal').classList.add('show');
+}
+
+function detailStat(label, value) {
+  return `<div style="background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px;text-align:center;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;color:rgba(255,255,255,.45);">${label}</div>
+    <div style="font-family:'Orbitron',sans-serif;font-weight:800;font-size:26px;color:#fff;margin-top:4px;">${value}</div>
+  </div>`;
+}
+
+function closeDetailModal() {
+  document.getElementById('detail-modal').classList.remove('show');
+}
+
+function deleteSession(idx) {
+  if (!confirm('Deletar este treino do histórico?')) return;
+  state.history.sessions.splice(idx, 1);
+  saveSessionsToStorage();
+  renderHistory();
 }
 
 function calcStreak(sessions) {
@@ -2372,6 +2645,14 @@ if ('serviceWorker' in navigator) {
   <div class="bottom-nav" style="grid-template-columns: 1fr 1fr;">
     <div class="nav-item" onclick="goHome()"><span class="nav-ico">⬚</span>CARTUCHOS</div>
     <div class="nav-item active"><span class="nav-ico">📋</span>HISTÓRICO</div>
+  </div>
+</div>
+
+<!-- MODAL DETALHES DO TREINO -->
+<div class="detail-modal-backdrop" id="detail-modal">
+  <div class="detail-modal">
+    <div class="detail-close" onclick="closeDetailModal()">✕</div>
+    <div id="detail-content"></div>
   </div>
 </div>
 
