@@ -666,22 +666,25 @@ body {
 .wk-timer.live { color: #00FFC2; text-shadow: 0 0 12px rgba(0,255,194,.4); }
 .wk-timer-lbl { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 2px; color: rgba(255,255,255,.4); margin-top: 2px; }
 .wk-pause {
-  width: 36px; height: 36px; border-radius: 10px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(255,255,255,.08);
   color: rgba(255,255,255,.7);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
+  white-space: nowrap;
 }
-.wk-pause::after { content: 'II'; }
+.wk-pause::after { content: 'PAUSAR'; }
 .wk-pause.paused {
   background: rgba(255,184,0,.1);
   border-color: rgba(255,184,0,.4);
   color: #FFB800;
 }
-.wk-pause.paused::after { content: '▶'; font-size: 11px; letter-spacing: 0; }
+.wk-pause.paused::after { content: 'CONTINUAR'; font-size: 9px; }
 
 /* Progresso */
 .wk-progress { padding: 0 20px 14px; display: flex; align-items: center; gap: 10px; }
@@ -1884,8 +1887,9 @@ const state = {
       { name:'PUXADA ALTA POLIA', desc:'COSTAS · BÍCEPS', sets:4, reps:8, rest:90, load:65, lastLoad:'última: —', isFoco:false, conjugated:null },
       { name:'REMADA CURVADA', desc:'COSTAS · TRAPÉZIO · ROMBÓIDE', sets:3, reps:8, rest:90, load:40, lastLoad:'última: —', isFoco:false, conjugated:null },
       { name:'FLY INVERTIDO MÁQUINA', desc:'DELTÓIDE POSTERIOR · SAÚDE ESCAPULAR', sets:3, reps:12, rest:60, load:50, lastLoad:'última: —', isFoco:true, conjugated:null },
-      { name:'OBLÍQUO + INFRA BOSU', desc:'CORE · OBLÍQUO', sets:3, reps:20, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:null },
       { name:'PALLOF PRESS', desc:'CORE · ANTI-ROTAÇÃO · PROTEÇÃO LOMBAR', sets:3, reps:12, rest:60, load:0, lastLoad:'última: —', isFoco:true, conjugated:null },
+      { name:'OBLÍQUO BOSU (UNILATERAL)', desc:'OBLÍQUO INTERNO E EXTERNO · 20 REPS CADA LADO', sets:3, reps:20, rest:0, load:0, lastLoad:'última: —', isFoco:false, conjugated:'INFRA BOSU' },
+      { name:'INFRA BOSU', desc:'INFRAESPINAL · CORE INFERIOR', sets:3, reps:20, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:'OBLÍQUO BOSU (UNILATERAL)' },
     ],
     'B': [
       { name:'AGACHAMENTO (SMITH/LIVRE)', desc:'QUADRÍCEPS · POTÊNCIA DE ARRANQUE', sets:4, reps:6, rest:120, load:50, lastLoad:'última: —', isFoco:true, conjugated:null },
@@ -2159,6 +2163,7 @@ function loadExercise(idx) {
   const ex = state.exercises[idx] || state.exercises[0];
   state.currentLoad = ex.usedLoad || ex.load || 0;
   state.totalSets = ex.sets;
+  state.currentExIdx = idx;
 
   document.getElementById('wk-exname').textContent = ex.name;
   document.getElementById('wk-exdesc').textContent = ex.desc;
@@ -2172,19 +2177,15 @@ function loadExercise(idx) {
   const focoTag = document.getElementById('wk-foco-tag');
   focoTag.className = ex.isFoco ? 'wk-tag' : 'wk-tag hidden';
 
-  // Série começa de onde parou
-  const startSet = (ex.completedSeries || 0) + 1;
-  updateSeriesBars(startSet, ex.sets);
+  const startSeries = (ex.completedSeries || 0) + 1;
+  updateSeriesBars(startSeries, ex.sets);
 
-  // Progress
   const done = state.exercises.filter(e => e.status === 'done').length;
   const pct = Math.round((done / state.exercises.length) * 100);
   document.getElementById('wk-prog-fill').style.width = Math.max(5, pct) + '%';
-  document.getElementById('wk-prog-txt').textContent = (done) + '/' + state.exercises.length;
+  document.getElementById('wk-prog-txt').textContent = done + '/' + state.exercises.length;
 
-  // Reset CTA
-  document.getElementById('wk-cta-idle').style.display = 'block';
-  document.getElementById('wk-timer-mode').classList.remove('show');
+  // NÃO mexe em visibilidade — isso é responsabilidade exclusiva de showCTA/showRest/showTimer
 }
 
 function updateSeriesBars(current, total) {
@@ -2223,21 +2224,41 @@ function fmt(s) {
 }
 
 /* INICIAR SÉRIE */
+/* =================================================================
+   UI STATE ATOMS — única fonte de verdade de visibilidade
+   ================================================================= */
+function showCTA() {
+  document.getElementById('wk-rest').classList.remove('show');
+  document.getElementById('wk-timer-mode').classList.remove('show');
+  document.getElementById('wk-cta-idle').style.display = 'block';
+}
+function showTimerMode() {
+  document.getElementById('wk-rest').classList.remove('show');
+  document.getElementById('wk-cta-idle').style.display = 'none';
+  document.getElementById('wk-timer-mode').classList.add('show');
+}
+function showRest(seconds, nextName) {
+  document.getElementById('wk-cta-idle').style.display = 'none';
+  document.getElementById('wk-timer-mode').classList.remove('show');
+  document.getElementById('wk-rest-timer').textContent = seconds;
+  document.getElementById('wk-rest-next-name').textContent = nextName || '—';
+  document.getElementById('wk-rest').classList.add('show');
+}
+
 function startSet() {
   state.isSetRunning = true;
   state.isSetPaused = false;
   state.setSec = 0;
 
-  // Garante que descanso está escondido
-  document.getElementById('wk-rest').classList.remove('show');
-  document.getElementById('wk-cta-idle').style.display = 'none';
-  document.getElementById('wk-timer-mode').classList.add('show');
+  showTimerMode();
+
   document.getElementById('wk-t-val').textContent = '00:00';
   document.getElementById('wk-t-val').className = 'wk-t-val';
   document.getElementById('wk-t-status').textContent = 'EXECUTANDO';
   document.getElementById('wk-t-status').className = 'wk-t-status';
   document.getElementById('wk-pause-set-btn').textContent = 'PAUSAR';
 
+  clearInterval(state.setInterval);
   state.setInterval = setInterval(() => {
     if (state.isSetPaused || state.isGlobalPaused) return;
     state.setSec++;
@@ -2308,6 +2329,7 @@ function finishSet() {
       refreshListItem(state._conjugatedReturnIdx);
       refreshListItem(partnerIdx);
       loadExercise(partnerIdx);
+      showCTA(); // mostra CTA para iniciar parte B
       return; // sem descanso — vai direto para B
     }
   }
@@ -2376,28 +2398,26 @@ function findNextPending() {
 }
 
 function startRest(seconds, newExercise, targetIdx) {
+  clearInterval(state.restInterval);
   state.restSec = seconds;
   state._restTargetIdx = targetIdx;
   state._restIsNewEx = newExercise;
 
-  // Garante que CTA e timer estão escondidos ANTES de mostrar descanso
-  document.getElementById('wk-cta-idle').style.display = 'none';
-  document.getElementById('wk-timer-mode').classList.remove('show');
-  document.getElementById('wk-rest').classList.add('show');
-  document.getElementById('wk-rest-timer').textContent = seconds;
-
   const nextEx = state.exercises[targetIdx];
-  document.getElementById('wk-rest-next-name').textContent = nextEx ? nextEx.name : '—';
 
-  // Se novo exercício, já atualiza o card enquanto descansa
-  if (newExercise && targetIdx !== state.currentExIdx) {
-    state.exercises[targetIdx].status = 'active';
-    refreshListItem(targetIdx);
-    scrollListToActive(targetIdx);
-    loadExercise(targetIdx);
+  // 1. Mostra descanso (único lugar que faz isso)
+  showRest(seconds, nextEx ? nextEx.name : '—');
+
+  // 2. Se novo exercício: carrega dados do próximo card APÓS showRest
+  if (newExercise) {
+    if (targetIdx !== state.currentExIdx) {
+      state.exercises[targetIdx].status = 'active';
+      refreshListItem(targetIdx);
+      scrollListToActive(targetIdx);
+    }
+    loadExercise(targetIdx); // só dados, não toca visibilidade
   }
 
-  clearInterval(state.restInterval);
   state.restInterval = setInterval(() => {
     if (state.isGlobalPaused) return;
     state.restSec--;
@@ -2409,26 +2429,20 @@ function startRest(seconds, newExercise, targetIdx) {
 
 function endRest() {
   clearInterval(state.restInterval);
-  document.getElementById('wk-rest').classList.remove('show');
-
   const idx = state._restTargetIdx;
   const isNew = state._restIsNewEx;
 
   if (!isNew) {
-    // Mesma série — atualiza barras e mostra CTA
     state.currentSetNum = (state.exercises[idx].completedSeries || 0) + 1;
     updateSeriesBars(state.currentSetNum, state.exercises[idx].sets);
     refreshListItem(idx);
   }
 
-  // CTA sempre aparece ao fim do descanso
-  document.getElementById('wk-cta-idle').style.display = 'block';
-  document.getElementById('wk-timer-mode').classList.remove('show');
+  showCTA(); // único lugar que mostra CTA após descanso
 }
 
 function skipRest() {
   clearInterval(state.restInterval);
-  state.restSec = 0;
   endRest();
 }
 
@@ -2483,6 +2497,9 @@ function finishWorkout() {
     totalSets: state.exercises.reduce((a,e) => a+e.sets, 0),
     volume: state.exercises.reduce((a,e) => a + (e.usedLoad||0) * e.sets * e.reps, 0),
     hasPR: state.completedSets > 0,
+    loads: state.exercises
+      .filter(ex => ex.completedSeries > 0)
+      .map(ex => ({ name: ex.name, load: ex.usedLoad || 0 })),
   };
   state.history.sessions = state.history.sessions || [];
   state.history.sessions.unshift(session);
@@ -2581,27 +2598,68 @@ function renderHistory() {
 function openDetailModal(idx) {
   const s = state.history.sessions[idx];
   if (!s) return;
+  const vol = Math.round(s.volume / 100) / 10;
+  const kcal = Math.round(s.duration / 60 * 8); // ~8 kcal/min estimado
   const content = document.getElementById('detail-content');
   content.innerHTML = `
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:48px;margin-bottom:10px;">🏆</div>
-      <div style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:22px;">MISSÃO COMPLETA</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;margin-top:6px;">Treino ${s.program} · ${s.programTitle}</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(0,255,194,.6);margin-top:4px;">${s.date} · ${s.cartridge}</div>
+    <!-- Trofeu + título -->
+    <div style="text-align:center;padding-bottom:4px;">
+      <div style="width:80px;height:80px;margin:0 auto 12px;">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 0 20px rgba(255,184,0,.5))">
+          <defs><linearGradient id="dtg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD700"/><stop offset=".5" stop-color="#FFB800"/><stop offset="1" stop-color="#8B6914"/></linearGradient></defs>
+          <path d="M 35 22 L 35 52 Q 35 66 50 66 Q 65 66 65 52 L 65 22 Z" fill="url(#dtg)" stroke="#aa7800" stroke-width="1"/>
+          <path d="M 35 28 Q 22 28 22 42 Q 22 52 35 50" fill="none" stroke="url(#dtg)" stroke-width="3"/>
+          <path d="M 65 28 Q 78 28 78 42 Q 78 52 65 50" fill="none" stroke="url(#dtg)" stroke-width="3"/>
+          <rect x="45" y="66" width="10" height="10" fill="url(#dtg)"/>
+          <rect x="35" y="76" width="30" height="6" rx="1" fill="url(#dtg)"/>
+        </svg>
+      </div>
+      <div style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:22px;letter-spacing:.5px;">MISSÃO COMPLETA</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px;margin-top:6px;">Treino ${s.program} · ${s.programTitle}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(0,255,194,.6);margin-top:3px;">${s.date} · ${s.cartridge}</div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-      ${detailStat('DURAÇÃO', fmt(s.duration))}
-      ${detailStat('VOLUME', Math.round(s.volume / 100) / 10 + 't')}
-      ${detailStat('SÉRIES', s.sets + '/' + s.totalSets)}
-      ${detailStat('CALORIAS', '487 kcal')}
+
+    <!-- XP / treinos -->
+    <div style="background:linear-gradient(135deg,rgba(0,255,194,.07),rgba(0,255,194,.02));border:1px solid rgba(0,255,194,.2);border-radius:16px;padding:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:16px;color:#00FFC2;">+1 TREINO NO ANO</div>
+        <div style="background:#00FFC2;color:#050507;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;padding:3px 10px;border-radius:999px;">+340 XP</div>
+      </div>
+      <div style="height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:72%;background:linear-gradient(90deg,#00FFC2,#FFB800);border-radius:3px;box-shadow:0 0 8px rgba(0,255,194,.5);"></div>
+      </div>
     </div>
+
     ${s.hasPR ? `
-    <div style="background:linear-gradient(180deg,rgba(255,56,96,.06),rgba(255,56,96,.02));border:1px solid rgba(255,56,96,.2);border-radius:14px;padding:14px;margin-bottom:14px;">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;color:rgba(255,56,96,.8);margin-bottom:6px;">RECORDE QUEBRADO</div>
+    <!-- Boss defeated -->
+    <div style="background:linear-gradient(180deg,rgba(255,56,96,.06),rgba(255,56,96,.02));border:1px solid rgba(255,56,96,.2);border-radius:14px;padding:14px;position:relative;">
+      <div style="position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(255,56,96,.6);font-weight:800;">BOSS</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;color:rgba(255,56,96,.8);margin-bottom:4px;">RECORDE QUEBRADO</div>
       <div style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:16px;">Personal Record</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#00FFC2;margin-top:8px;font-weight:700;">✓ BOSS DEFEATED</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#00FFC2;margin-top:10px;font-weight:700;">✓ BOSS DEFEATED</div>
     </div>` : ''}
-    <button onclick="closeDetailModal()" style="width:100%;padding:16px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;cursor:pointer;margin-top:4px;">FECHAR</button>
+
+    <!-- Stats 2x2 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      ${detailStat('DURAÇÃO', fmt(s.duration))}
+      ${detailStat('VOLUME', vol + 't')}
+      ${detailStat('CALORIAS', kcal + ' kcal')}
+      ${detailStat('SÉRIES', s.sets + '/' + s.totalSets)}
+    </div>
+
+    <!-- Evolução de carga (se tiver cargas salvas) -->
+    ${s.loads && s.loads.length ? `
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:14px;padding:14px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;color:rgba(255,255,255,.4);margin-bottom:12px;">CARGAS USADAS</div>
+      ${s.loads.map(l => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="flex:1;font-size:12px;color:rgba(255,255,255,.8);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.name}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#00FFC2;font-weight:700;min-width:50px;text-align:right;">${l.load > 0 ? l.load + 'kg' : 'corp.'}</div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+
+    <button onclick="closeDetailModal()" style="width:100%;padding:15px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;cursor:pointer;">FECHAR</button>
   `;
   document.getElementById('detail-modal').classList.add('show');
 }
