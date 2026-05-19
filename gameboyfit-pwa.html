@@ -3123,7 +3123,7 @@ function applyCartFocusUI(cartId) {
 
   // Seleção visual nos cards
   document.querySelectorAll('.cart-card').forEach(card => {
-    card.classList.remove('selected-gold', 'selected-blue');
+    card.classList.remove('selected-gold', 'selected-blue', 'selected-silver');
   });
   const selectedCard = document.querySelector(`.cart-card[data-cart-id="${cartId}"]`);
   if (selectedCard) selectedCard.classList.add(cfg.selectedClass);
