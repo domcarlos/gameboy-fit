@@ -1465,7 +1465,7 @@ body {
     <div class="carts-row">
 
       <!-- Cartucho Elite Futebol — estilo EA FC -->
-      <div class="cart-card" onclick="selectCartridge('elite-futebol', 'ELITE FUTEBOL', 'Paulo Paulada', 2, 8)">
+      <div class="cart-card" data-cart-id="elite-futebol" onclick="selectCartridge('elite-futebol', 'ELITE FUTEBOL', 'Paulo Paulada', 2, 8)">
         <div class="cart-bg"></div>
         <div class="cart-texture"></div>
         <div class="cart-glow"></div>
@@ -1528,10 +1528,34 @@ body {
     </div>
   </div>
 
+  <!-- Label do cartucho em foco nos stats -->
+  <div id="hs-cart-label" style="
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    letter-spacing:1.5px;
+    color:rgba(0,255,194,.5);
+    text-align:center;
+    margin: 16px 20px 6px;
+    text-transform:uppercase;
+  ">— ELITE FUTEBOL —</div>
+
+  <!-- Stats dinâmicos por cartucho em destaque -->
   <div class="home-stats">
-    <div class="hs"><div class="hs-lbl">SEMANA</div><div class="hs-val">3<span style="font-size:12px;color:rgba(255,255,255,.4)">/8</span></div><div class="hs-trend">no ritmo</div></div>
-    <div class="hs"><div class="hs-lbl">TREINOS</div><div class="hs-val">9</div><div class="hs-trend">+2 sem.</div></div>
-    <div class="hs"><div class="hs-lbl">VOLUME</div><div class="hs-val">42<span style="font-size:12px;color:rgba(255,255,255,.4)">t</span></div><div class="hs-trend">+12%</div></div>
+    <div class="hs">
+      <div class="hs-lbl">SEMANA</div>
+      <div class="hs-val" id="hs-semana">—</div>
+      <div class="hs-trend" id="hs-semana-trend">sem dados</div>
+    </div>
+    <div class="hs">
+      <div class="hs-lbl">MÊS</div>
+      <div class="hs-val" id="hs-mes">—</div>
+      <div class="hs-trend" id="hs-mes-trend">sem dados</div>
+    </div>
+    <div class="hs">
+      <div class="hs-lbl">ANO</div>
+      <div class="hs-val" id="hs-ano">—</div>
+      <div class="hs-trend" id="hs-ano-trend">sem dados</div>
+    </div>
   </div>
 
   <div class="bottom-nav" style="grid-template-columns: 1fr 1fr;">
@@ -2784,10 +2808,10 @@ function finishWorkout() {
     id: Date.now(),
     date: dateStr,
     dateMs: Date.now(),
-    dateMs: Date.now(),
     program: state.program ? state.program.label : 'A',
     programTitle: state.program ? state.program.title : 'Treino',
     cartridge: state.cartridge ? state.cartridge.name : 'ELITE FUTEBOL',
+    cartridgeId: state.cartridge ? state.cartridge.id : 'elite-futebol',
     duration: state.totalSec,
     sets: state.completedSets,
     totalSets: state.exercises.reduce((a,e) => a+e.sets, 0),
@@ -2822,7 +2846,7 @@ function renderHistory() {
   const now = new Date();
   const thisYear = now.getFullYear();
 
-  // Treinos no ano atual
+  // Treinos no ano atual (todos os cartuchos — para o painel do atleta)
   const treinosAno = sessions.filter(s => {
     const d = new Date(s.dateMs || 0);
     return d.getFullYear() === thisYear;
@@ -2835,12 +2859,12 @@ function renderHistory() {
   // Streak — dias consecutivos até hoje
   const streak = calcStreak(sessions);
 
-  // Atualiza card da home
+  // Atualiza card do atleta no topo
   const elAno = document.getElementById('home-treinos-ano');
   const elVol = document.getElementById('home-volume');
   const elStreak = document.getElementById('home-streak');
   if (elAno) elAno.textContent = treinosAno;
-  if (elVol) elVol.innerHTML = volumeT > '0t' ? volumeT.replace('t', '<span style="font-size:11px;color:rgba(255,255,255,.4)">t</span>') : '0<span style="font-size:11px;color:rgba(255,255,255,.4)">t</span>';
+  if (elVol) elVol.innerHTML = volumeTotal > 0 ? volumeT.replace('t', '<span style="font-size:11px;color:rgba(255,255,255,.4)">t</span>') : '0<span style="font-size:11px;color:rgba(255,255,255,.4)">t</span>';
   if (elStreak) elStreak.textContent = streak + (streak > 0 ? '🔥' : '');
 
   // Atualiza totais do histórico
@@ -2851,6 +2875,9 @@ function renderHistory() {
   if (el) el.textContent = sessions.length;
   if (elH) elH.textContent = totalMin >= 60 ? Math.floor(totalMin / 60) + 'h' : totalMin + 'min';
   if (elS) elS.textContent = streak;
+
+  // Atualiza os cards de performance do cartucho em destaque
+  renderHomeStats();
 
   const list = document.getElementById('hist-list');
   if (!list) return;
@@ -2890,6 +2917,155 @@ function renderHistory() {
     </div>
   `).join('');
 }
+
+/* ================================================================
+   STATS POR CARTUCHO EM DESTAQUE
+   ================================================================ */
+function getFocusedCartId() {
+  // Retorna o data-cart-id do cartucho mais visível na carts-row
+  const row = document.querySelector('.carts-row');
+  if (!row) return null;
+  const cards = row.querySelectorAll('.cart-card[data-cart-id]');
+  if (!cards.length) return null;
+  // Se só tem um, retorna ele
+  if (cards.length === 1) return cards[0].dataset.cartId;
+  // Qual está mais centrado no scroll?
+  const rowRect = row.getBoundingClientRect();
+  const rowCenter = rowRect.left + rowRect.width / 2;
+  let best = null, bestDist = Infinity;
+  cards.forEach(card => {
+    const r = card.getBoundingClientRect();
+    const cardCenter = r.left + r.width / 2;
+    const dist = Math.abs(cardCenter - rowCenter);
+    if (dist < bestDist) { bestDist = dist; best = card.dataset.cartId; }
+  });
+  return best;
+}
+
+function renderHomeStats() {
+  const sessions = (state.history && state.history.sessions) || [];
+  const cartId = getFocusedCartId();
+
+  // Filtra sessões do cartucho em foco (ou todas se não identificado)
+  const cartSessions = cartId
+    ? sessions.filter(s => {
+        // Normaliza: compara pelo cartId ou pelo nome do cartucho
+        const sId = (s.cartridgeId || '').toLowerCase();
+        const sName = (s.cartridge || '').toLowerCase().replace(/\s+/g, '-');
+        return sId === cartId || sName === cartId;
+      })
+    : sessions;
+
+  const now = new Date();
+
+  // Helpers de período
+  function startOf(unit, offset = 0) {
+    const d = new Date(now);
+    if (unit === 'week') {
+      const day = d.getDay(); // 0=dom
+      d.setDate(d.getDate() - day + offset * 7);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    if (unit === 'month') {
+      d.setMonth(d.getMonth() + offset, 1);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    if (unit === 'year') {
+      d.setFullYear(d.getFullYear() + offset, 0, 1);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+  }
+  function endOf(unit, offset = 0) {
+    const d = new Date(now);
+    if (unit === 'week') {
+      const day = d.getDay();
+      d.setDate(d.getDate() - day + 6 + offset * 7);
+      d.setHours(23, 59, 59, 999);
+      return d;
+    }
+    if (unit === 'month') {
+      d.setMonth(d.getMonth() + 1 + offset, 0);
+      d.setHours(23, 59, 59, 999);
+      return d;
+    }
+    if (unit === 'year') {
+      d.setFullYear(d.getFullYear() + offset, 11, 31);
+      d.setHours(23, 59, 59, 999);
+      return d;
+    }
+  }
+  function countIn(arr, from, to) {
+    return arr.filter(s => {
+      const ms = s.dateMs || 0;
+      return ms >= from.getTime() && ms <= to.getTime();
+    }).length;
+  }
+  function trendLabel(curr, prev, unit) {
+    if (curr === 0 && prev === 0) return 'sem dados';
+    if (prev === 0) return curr > 0 ? `+${curr} vs ${unit} ant.` : 'sem dados';
+    const diff = curr - prev;
+    const sign = diff >= 0 ? '+' : '';
+    return `${sign}${diff} vs ${unit} ant.`;
+  }
+  function trendColor(curr, prev) {
+    if (curr > prev) return '#00FFC2';
+    if (curr < prev) return '#FF3860';
+    return 'rgba(255,255,255,.4)';
+  }
+
+  // Semana atual vs semana passada
+  const semCurr = countIn(cartSessions, startOf('week', 0), endOf('week', 0));
+  const semPrev = countIn(cartSessions, startOf('week', -1), endOf('week', -1));
+
+  // Mês atual vs mês passado
+  const mesCurr = countIn(cartSessions, startOf('month', 0), endOf('month', 0));
+  const mesPrev = countIn(cartSessions, startOf('month', -1), endOf('month', -1));
+
+  // Ano atual vs ano passado
+  const anoCurr = countIn(cartSessions, startOf('year', 0), endOf('year', 0));
+  const anoPrev = countIn(cartSessions, startOf('year', -1), endOf('year', -1));
+
+  // Atualiza DOM
+  const elSem    = document.getElementById('hs-semana');
+  const elSemT   = document.getElementById('hs-semana-trend');
+  const elMes    = document.getElementById('hs-mes');
+  const elMesT   = document.getElementById('hs-mes-trend');
+  const elAno    = document.getElementById('hs-ano');
+  const elAnoT   = document.getElementById('hs-ano-trend');
+  const elLabel  = document.getElementById('hs-cart-label');
+
+  // Atualiza label com nome legível do cartucho em foco
+  if (elLabel) {
+    const row = document.querySelector('.carts-row');
+    const focused = row && row.querySelector(`.cart-card[data-cart-id="${cartId}"] .cart-title`);
+    const cartName = focused ? focused.textContent : (cartId || '').replace(/-/g, ' ').toUpperCase();
+    elLabel.textContent = cartName ? `— ${cartName} —` : '';
+  }
+
+  if (elSem)  elSem.textContent  = semCurr;
+  if (elSemT) { elSemT.textContent = trendLabel(semCurr, semPrev, 'sem'); elSemT.style.color = trendColor(semCurr, semPrev); }
+  if (elMes)  elMes.textContent  = mesCurr;
+  if (elMesT) { elMesT.textContent = trendLabel(mesCurr, mesPrev, 'mês'); elMesT.style.color = trendColor(mesCurr, mesPrev); }
+  if (elAno)  elAno.textContent  = anoCurr;
+  if (elAnoT) { elAnoT.textContent = trendLabel(anoCurr, anoPrev, 'ano'); elAnoT.style.color = trendColor(anoCurr, anoPrev); }
+}
+
+// Listener: ao scrollar o carrossel de cartuchos, atualiza os stats
+(function initCartsScrollListener() {
+  function attach() {
+    const row = document.querySelector('.carts-row');
+    if (!row) { setTimeout(attach, 300); return; }
+    let scrollTimer;
+    row.addEventListener('scroll', () => {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(renderHomeStats, 120);
+    }, { passive: true });
+  }
+  attach();
+})();
 
 function openDetailModal(idx) {
   const s = state.history.sessions[idx];
