@@ -2182,7 +2182,7 @@ function goBack() {
 function goHome() {
   stopAll();
   const savedSessions = state.history.sessions || [];
-  ['screen-home','screen-programs','screen-workout','screen-report','screen-history','screen-run-programs','screen-run','screen-run-report','screen-stretch-programs'].forEach(id => {
+  ['screen-home','screen-programs','screen-workout','screen-report','screen-history','screen-run-programs','screen-run','screen-run-report','screen-stretch-programs','screen-stretch-report'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -2932,10 +2932,11 @@ function finishWorkout() {
   stopAll();
   releaseWakeLock();
 
-  // Salva no histórico
   const now = new Date();
   const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const dateStr = now.getDate() + ' ' + months[now.getMonth()];
+
+  const isStretch = state.cartridge && state.cartridge.id === 'alongamento-diario';
 
   const session = {
     id: Date.now(),
@@ -2948,20 +2949,71 @@ function finishWorkout() {
     duration: state.totalSec,
     sets: state.completedSets,
     totalSets: state.exercises.reduce((a,e) => a+e.sets, 0),
-    volume: state.exercises.reduce((a,e) => a + (e.usedLoad||0) * e.sets * e.reps, 0),
-    hasPR: state.completedSets > 0,
-    loads: state.exercises
-      .filter(ex => ex.completedSeries > 0)
-      .map(ex => ({ name: ex.name, load: ex.usedLoad || 0 })),
+    volume: isStretch ? 0 : state.exercises.reduce((a,e) => a + (e.usedLoad||0) * e.sets * e.reps, 0),
+    hasPR: !isStretch && state.completedSets > 0,
+    loads: isStretch ? [] : state.exercises.filter(ex => ex.completedSeries > 0).map(ex => ({ name: ex.name, load: ex.usedLoad || 0 })),
   };
   state.history.sessions = state.history.sessions || [];
   state.history.sessions.unshift(session);
-  saveSessionsToStorage(); // persiste no dispositivo
+  saveSessionsToStorage();
+  renderHistory();
 
-  document.getElementById('rp-duration').textContent = fmt(state.totalSec);
-  document.getElementById('rp-sets').innerHTML = state.completedSets + '<span>/' + session.totalSets + '</span>';
-  if (state.program) document.getElementById('rp-sub').textContent = 'Treino ' + state.program.label + ' · ' + state.program.title;
-  goTo('report');
+  if (isStretch) {
+    populateStretchReport(session);
+    goTo('stretch-report');
+  } else {
+    document.getElementById('rp-duration').textContent = fmt(state.totalSec);
+    document.getElementById('rp-sets').innerHTML = state.completedSets + '<span>/' + session.totalSets + '</span>';
+    if (state.program) document.getElementById('rp-sub').textContent = 'Treino ' + state.program.label + ' · ' + state.program.title;
+    goTo('report');
+  }
+}
+
+function populateStretchReport(session) {
+  const prog = state.program || {};
+  const isNight = prog.label === 'S2';
+  const icon = isNight ? '🌙' : '☀';
+  const completedEx = state.exercises.filter(e => e.status === 'done').length;
+  const total = state.exercises.length;
+  const pct = Math.round((completedEx / total) * 100);
+
+  const el = id => document.getElementById(id);
+  if (el('str-rp-icon'))    el('str-rp-icon').textContent = icon;
+  if (el('str-rp-title'))   el('str-rp-title').textContent = isNight ? 'corpo desligado' : 'corpo acordado';
+  if (el('str-rp-sub'))     el('str-rp-sub').textContent = (prog.title || '') + ' · ALONGAMENTO DIÁRIO';
+  if (el('str-rp-duration')) el('str-rp-duration').textContent = fmt(session.duration);
+  if (el('str-rp-exercises')) el('str-rp-exercises').textContent = completedEx + '/' + total;
+  if (el('str-rp-pct'))     { el('str-rp-pct').textContent = pct + '% concluídos'; el('str-rp-pct').className = 'rp-stat-trend ' + (pct === 100 ? 'up' : 'neutral'); }
+
+  // Estimativa de benefício
+  const minTotal = Math.round(session.duration / 60);
+  if (el('str-rp-benefit')) el('str-rp-benefit').textContent = minTotal + ' min de mobilidade';
+  if (el('str-rp-benefit-sub')) el('str-rp-benefit-sub').textContent = isNight ? 'recuperação noturna' : 'preparação matinal';
+
+  // Lista de exercícios concluídos
+  const list = el('str-rp-list');
+  if (list) {
+    list.innerHTML = state.exercises.map(ex => {
+      const done = ex.status === 'done';
+      const timeLabel = ex.timeS > 0 ? ex.timeS + 's' : (ex.reps > 0 ? ex.reps + ' reps' : '');
+      const setsLabel = ex.sets > 1 ? ex.sets + 'x · ' : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;
+        background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);margin-bottom:5px;">
+        <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+          background:${done ? 'rgba(192,192,192,.12)' : 'rgba(255,255,255,.04)'};font-size:12px;">
+          ${done ? '✓' : '○'}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:${done ? '#fff' : 'rgba(255,255,255,.4)'};
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ex.name}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.3);margin-top:2px;">
+            ${setsLabel}${timeLabel} · ${ex.muscles || ''}
+          </div>
+        </div>
+        <div style="font-size:13px;flex-shrink:0;">${done ? '✓' : ''}</div>
+      </div>`;
+    }).join('');
+  }
 }
 
 /* ============================================================
@@ -4023,6 +4075,47 @@ document.addEventListener('visibilitychange', () => {
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ======================================================
+     SCREEN: ALONGAMENTO REPORT
+     ====================================================== -->
+<div class="screen" id="screen-stretch-report">
+  <div class="rp-content">
+
+    <div class="rp-hero">
+      <div class="rp-trophy" style="font-size:56px;line-height:1;display:flex;align-items:center;justify-content:center;">
+        <span id="str-rp-icon">☀</span>
+      </div>
+      <div class="rp-title" id="str-rp-title">corpo acordado</div>
+      <div class="rp-sub" id="str-rp-sub">Acorda o Corpo · ALONGAMENTO DIÁRIO</div>
+    </div>
+
+    <div class="rp-stats">
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">DURAÇÃO</div>
+        <div class="rp-stat-val" id="str-rp-duration">00:00</div>
+        <div class="rp-stat-trend neutral">tempo total</div>
+      </div>
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">EXERCÍCIOS</div>
+        <div class="rp-stat-val" id="str-rp-exercises">0</div>
+        <div class="rp-stat-trend up" id="str-rp-pct">100% concluídos</div>
+      </div>
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">BENEFÍCIO</div>
+        <div class="rp-stat-val" id="str-rp-benefit">—</div>
+        <div class="rp-stat-trend neutral" id="str-rp-benefit-sub">mobilidade</div>
+      </div>
+    </div>
+
+    <div class="rp-section">
+      <div class="rp-sect-title">EXERCÍCIOS REALIZADOS</div>
+      <div id="str-rp-list"></div>
+    </div>
+
+    <button class="btn-secondary" onclick="goHome()" style="margin-top:16px;">VOLTAR AO INÍCIO</button>
   </div>
 </div>
 
