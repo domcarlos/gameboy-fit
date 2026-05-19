@@ -256,6 +256,23 @@ body {
 }
 .cart-card:active { transform: scale(.97); }
 
+/* Cartucho selecionado — Elite (dourado) */
+.cart-card.selected-gold {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow:
+    0 0 0 2.5px rgba(255,215,0,.7),
+    0 28px 60px rgba(0,0,0,.9),
+    0 0 60px rgba(255,215,0,.2);
+}
+/* Cartucho selecionado — Corrida (azul) */
+.cart-card.selected-blue {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow:
+    0 0 0 2.5px rgba(56,165,255,.7),
+    0 28px 60px rgba(0,0,0,.9),
+    0 0 60px rgba(56,165,255,.2);
+}
+
 /* Fundo base — gradiente de campo */
 .cart-bg {
   position: absolute;
@@ -1458,7 +1475,7 @@ body {
     <div class="carts-row">
 
       <!-- Cartucho Elite Futebol — estilo EA FC -->
-      <div class="cart-card" data-cart-id="elite-futebol" onclick="selectCartridge('elite-futebol', 'ELITE FUTEBOL', 'Carlos Henrique', 2, 8)">
+      <div class="cart-card" data-cart-id="elite-futebol" onclick="focusCartridge('elite-futebol')">
         <div class="cart-bg"></div>
         <div class="cart-texture"></div>
         <div class="cart-glow"></div>
@@ -1500,7 +1517,7 @@ body {
       </div>
 
       <!-- Cartucho Corrida para Futebol -->
-      <div class="cart-card" data-cart-id="corrida-futebol" onclick="selectCartridgeRun('corrida-futebol','CORRIDA FUTEBOL','Carlos Henrique',3,8)">
+      <div class="cart-card" data-cart-id="corrida-futebol" onclick="focusCartridge('corrida-futebol')">
         <div class="cart-bg" style="background:linear-gradient(160deg,#0d0d0d 0%,#090909 30%,#060606 60%,#0a0a0a 100%);"></div>
         <div class="cart-texture"></div>
         <div class="cart-glow" style="background:radial-gradient(ellipse at 50% 30%,rgba(56,165,255,.18),transparent 70%);"></div>
@@ -1543,15 +1560,22 @@ body {
     </div>
   </div>
 
-  <!-- Label do cartucho em foco nos stats -->
+  <!-- Dots indicadores de qual cartucho está selecionado -->
+  <div id="cart-dots" style="display:flex;justify-content:center;gap:8px;margin:12px 0 0;">
+    <div class="cart-dot" data-dot="elite-futebol" style="width:8px;height:8px;border-radius:50%;background:#FFD700;opacity:1;transition:all .3s;"></div>
+    <div class="cart-dot" data-dot="corrida-futebol" style="width:8px;height:8px;border-radius:50%;background:rgba(56,165,255,.25);opacity:.4;transition:all .3s;"></div>
+  </div>
+
+  <!-- Label do cartucho selecionado -->
   <div id="hs-cart-label" style="
     font-family:'JetBrains Mono',monospace;
     font-size:9px;
     letter-spacing:1.5px;
     color:rgba(0,255,194,.5);
     text-align:center;
-    margin: 16px 20px 6px;
+    margin: 10px 20px 6px;
     text-transform:uppercase;
+    transition:color .3s;
   ">— ELITE FUTEBOL —</div>
 
   <!-- Stats dinâmicos por cartucho em destaque -->
@@ -1571,6 +1595,24 @@ body {
       <div class="hs-val" id="hs-ano">—</div>
       <div class="hs-trend" id="hs-ano-trend">sem dados</div>
     </div>
+  </div>
+
+  <!-- Botão CTA — ver treinos do cartucho selecionado -->
+  <div style="padding:12px 20px 0;">
+    <div id="cart-cta-btn" onclick="openSelectedCartridge()" style="
+      border-radius:14px;
+      padding:14px 20px;
+      text-align:center;
+      font-family:'JetBrains Mono',monospace;
+      font-size:11px;
+      letter-spacing:2px;
+      font-weight:700;
+      cursor:pointer;
+      transition:all .25s;
+      background:linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,215,0,.04));
+      border:1px solid rgba(255,215,0,.35);
+      color:#FFD700;
+    ">VER TREINOS →</div>
   </div>
 
   <div class="bottom-nav" style="grid-template-columns: 1fr 1fr;">
@@ -2087,7 +2129,7 @@ function goBack() {
 function goHome() {
   stopAll();
   const savedSessions = state.history.sessions || [];
-  ['screen-home','screen-programs','screen-workout','screen-report','screen-history','screen-run-programs','screen-run'].forEach(id => {
+  ['screen-home','screen-programs','screen-workout','screen-report','screen-history','screen-run-programs','screen-run','screen-run-report'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -2920,21 +2962,34 @@ function renderHistory() {
     return;
   }
 
-  list.innerHTML = sessions.map((s, idx) => `
-    <div class="hist-item" style="flex-direction:column;align-items:stretch;cursor:default;">
+  list.innerHTML = sessions.map((s, idx) => {
+    const isRun = s.cartridgeId === 'corrida-futebol';
+    const accentColor = isRun ? '#38a5ff' : '#00FFC2';
+    const accentBg = isRun ? 'rgba(56,165,255,.15)' : 'rgba(0,255,194,.15)';
+    const accentBorder = isRun ? 'rgba(56,165,255,.3)' : 'rgba(0,255,194,.3)';
+    const cartIcon = isRun ? '🏃' : '💪';
+    const metaLine = isRun
+      ? `${s.sets} etapas · ${fmt(s.duration)}`
+      : `${s.sets}/${s.totalSets} séries · ${Math.round(s.volume / 100) / 10}t`;
+    const rightBottom = isRun
+      ? `<div class="hist-item-vol" style="color:${accentColor};font-size:9px;">CORRIDA</div>`
+      : `<div class="hist-item-vol">${Math.round(s.volume)} kg</div>`;
+
+    return `
+    <div class="hist-item" style="flex-direction:column;align-items:stretch;cursor:default;border-color:${accentBorder};">
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="hist-item-left">
-          <div class="hist-item-letter">${s.program}</div>
+          <div class="hist-item-letter" style="background:linear-gradient(135deg,${accentBg},rgba(0,0,0,.02));border-color:${accentBorder};color:${accentColor};">${s.program}</div>
           <div class="hist-item-date">${s.date}</div>
         </div>
         <div class="hist-item-info">
           <div class="hist-item-name">${s.programTitle}</div>
-          <div class="hist-item-cart">${s.cartridge}</div>
-          <div class="hist-item-meta">${s.sets}/${s.totalSets} séries · ${Math.round(s.volume / 100) / 10}t</div>
+          <div class="hist-item-cart" style="color:${accentColor};">${cartIcon} ${s.cartridge}</div>
+          <div class="hist-item-meta">${metaLine}</div>
         </div>
         <div class="hist-item-right">
           <div class="hist-item-duration">${fmt(s.duration)}</div>
-          <div class="hist-item-vol">${Math.round(s.volume)} kg</div>
+          ${rightBottom}
           ${s.hasPR ? '<div class="hist-item-pr">★ PR</div>' : ''}
         </div>
       </div>
@@ -2942,42 +2997,101 @@ function renderHistory() {
         <button class="hist-action-btn view" onclick="openDetailModal(${idx})">VER DETALHES</button>
         <button class="hist-action-btn del" onclick="deleteSession(${idx})">DELETAR</button>
       </div>
-    </div>
-  `).join('');
+    </div>`; }).join('');
 }
 
 /* ================================================================
    STATS POR CARTUCHO EM DESTAQUE
    ================================================================ */
-function getFocusedCartId() {
-  // Retorna o data-cart-id do cartucho mais visível na carts-row
-  const row = document.querySelector('.carts-row');
-  if (!row) return null;
-  const cards = row.querySelectorAll('.cart-card[data-cart-id]');
-  if (!cards.length) return null;
-  // Se só tem um, retorna ele
-  if (cards.length === 1) return cards[0].dataset.cartId;
-  // Qual está mais centrado no scroll?
-  const rowRect = row.getBoundingClientRect();
-  const rowCenter = rowRect.left + rowRect.width / 2;
-  let best = null, bestDist = Infinity;
-  cards.forEach(card => {
-    const r = card.getBoundingClientRect();
-    const cardCenter = r.left + r.width / 2;
-    const dist = Math.abs(cardCenter - rowCenter);
-    if (dist < bestDist) { bestDist = dist; best = card.dataset.cartId; }
-  });
-  return best;
+/* -------------------------------------------------------
+   SELEÇÃO DE CARTUCHO NA HOME
+   ------------------------------------------------------- */
+const CART_CONFIG = {
+  'elite-futebol': {
+    accentColor: '#FFD700',
+    dotActive: '#FFD700',
+    ctaBg: 'linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,215,0,.04))',
+    ctaBorder: 'rgba(255,215,0,.35)',
+    ctaColor: '#FFD700',
+    selectedClass: 'selected-gold',
+    labelColor: 'rgba(255,215,0,.6)',
+    openFn: () => selectCartridge('elite-futebol','ELITE FUTEBOL','Carlos Henrique',2,8),
+  },
+  'corrida-futebol': {
+    accentColor: '#38a5ff',
+    dotActive: '#38a5ff',
+    ctaBg: 'linear-gradient(135deg,rgba(56,165,255,.12),rgba(56,165,255,.04))',
+    ctaBorder: 'rgba(56,165,255,.35)',
+    ctaColor: '#38a5ff',
+    selectedClass: 'selected-blue',
+    labelColor: 'rgba(56,165,255,.6)',
+    openFn: () => selectCartridgeRun('corrida-futebol','CORRIDA FUTEBOL','Carlos Henrique',3,8),
+  }
+};
+
+let _focusedCartId = 'elite-futebol';
+
+function focusCartridge(cartId) {
+  if (_focusedCartId === cartId) {
+    openSelectedCartridge();
+    return;
+  }
+  _focusedCartId = cartId;
+  applyCartFocusUI(cartId);
+  renderHomeStats();
 }
+
+function applyCartFocusUI(cartId) {
+  const cfg = CART_CONFIG[cartId];
+  if (!cfg) return;
+
+  // Seleção visual nos cards
+  document.querySelectorAll('.cart-card').forEach(card => {
+    card.classList.remove('selected-gold', 'selected-blue');
+  });
+  const selectedCard = document.querySelector(`.cart-card[data-cart-id="${cartId}"]`);
+  if (selectedCard) selectedCard.classList.add(cfg.selectedClass);
+
+  // Dots indicadores
+  document.querySelectorAll('.cart-dot').forEach(dot => {
+    const isActive = dot.dataset.dot === cartId;
+    const dotCfg = CART_CONFIG[dot.dataset.dot];
+    dot.style.background = isActive ? (dotCfg ? dotCfg.dotActive : '#fff') : 'rgba(255,255,255,.15)';
+    dot.style.opacity = isActive ? '1' : '0.4';
+    dot.style.width = isActive ? '20px' : '8px';
+    dot.style.borderRadius = isActive ? '4px' : '50%';
+  });
+
+  // Label
+  const label = document.getElementById('hs-cart-label');
+  if (label) {
+    const names = { 'elite-futebol': 'ELITE FUTEBOL', 'corrida-futebol': 'CORRIDA FUTEBOL' };
+    label.textContent = '— ' + (names[cartId] || cartId.replace(/-/g,' ').toUpperCase()) + ' —';
+    label.style.color = cfg.labelColor;
+  }
+
+  // Botão CTA
+  const cta = document.getElementById('cart-cta-btn');
+  if (cta) {
+    cta.style.background = cfg.ctaBg;
+    cta.style.borderColor = cfg.ctaBorder;
+    cta.style.color = cfg.ctaColor;
+  }
+}
+
+function openSelectedCartridge() {
+  const cfg = CART_CONFIG[_focusedCartId];
+  if (cfg) cfg.openFn();
+}
+
+function getFocusedCartId() { return _focusedCartId; }
 
 function renderHomeStats() {
   const sessions = (state.history && state.history.sessions) || [];
   const cartId = getFocusedCartId();
 
-  // Filtra sessões do cartucho em foco (ou todas se não identificado)
   const cartSessions = cartId
     ? sessions.filter(s => {
-        // Normaliza: compara pelo cartId ou pelo nome do cartucho
         const sId = (s.cartridgeId || '').toLowerCase();
         const sName = (s.cartridge || '').toLowerCase().replace(/\s+/g, '-');
         return sId === cartId || sName === cartId;
@@ -2986,56 +3100,25 @@ function renderHomeStats() {
 
   const now = new Date();
 
-  // Helpers de período
   function startOf(unit, offset = 0) {
     const d = new Date(now);
-    if (unit === 'week') {
-      const day = d.getDay(); // 0=dom
-      d.setDate(d.getDate() - day + offset * 7);
-      d.setHours(0, 0, 0, 0);
-      return d;
-    }
-    if (unit === 'month') {
-      d.setMonth(d.getMonth() + offset, 1);
-      d.setHours(0, 0, 0, 0);
-      return d;
-    }
-    if (unit === 'year') {
-      d.setFullYear(d.getFullYear() + offset, 0, 1);
-      d.setHours(0, 0, 0, 0);
-      return d;
-    }
+    if (unit === 'week') { const day = d.getDay(); d.setDate(d.getDate() - day + offset * 7); d.setHours(0,0,0,0); return d; }
+    if (unit === 'month') { d.setMonth(d.getMonth() + offset, 1); d.setHours(0,0,0,0); return d; }
+    if (unit === 'year') { d.setFullYear(d.getFullYear() + offset, 0, 1); d.setHours(0,0,0,0); return d; }
   }
   function endOf(unit, offset = 0) {
     const d = new Date(now);
-    if (unit === 'week') {
-      const day = d.getDay();
-      d.setDate(d.getDate() - day + 6 + offset * 7);
-      d.setHours(23, 59, 59, 999);
-      return d;
-    }
-    if (unit === 'month') {
-      d.setMonth(d.getMonth() + 1 + offset, 0);
-      d.setHours(23, 59, 59, 999);
-      return d;
-    }
-    if (unit === 'year') {
-      d.setFullYear(d.getFullYear() + offset, 11, 31);
-      d.setHours(23, 59, 59, 999);
-      return d;
-    }
+    if (unit === 'week') { const day = d.getDay(); d.setDate(d.getDate() - day + 6 + offset * 7); d.setHours(23,59,59,999); return d; }
+    if (unit === 'month') { d.setMonth(d.getMonth() + 1 + offset, 0); d.setHours(23,59,59,999); return d; }
+    if (unit === 'year') { d.setFullYear(d.getFullYear() + offset, 11, 31); d.setHours(23,59,59,999); return d; }
   }
   function countIn(arr, from, to) {
-    return arr.filter(s => {
-      const ms = s.dateMs || 0;
-      return ms >= from.getTime() && ms <= to.getTime();
-    }).length;
+    return arr.filter(s => { const ms = s.dateMs || 0; return ms >= from.getTime() && ms <= to.getTime(); }).length;
   }
   function trendLabel(curr, prev, unit) {
     if (curr === 0 && prev === 0) return 'sem dados';
     if (prev === 0) return curr > 0 ? `+${curr} vs ${unit} ant.` : 'sem dados';
-    const diff = curr - prev;
-    const sign = diff >= 0 ? '+' : '';
+    const diff = curr - prev, sign = diff >= 0 ? '+' : '';
     return `${sign}${diff} vs ${unit} ant.`;
   }
   function trendColor(curr, prev) {
@@ -3044,34 +3127,19 @@ function renderHomeStats() {
     return 'rgba(255,255,255,.4)';
   }
 
-  // Semana atual vs semana passada
-  const semCurr = countIn(cartSessions, startOf('week', 0), endOf('week', 0));
-  const semPrev = countIn(cartSessions, startOf('week', -1), endOf('week', -1));
+  const semCurr = countIn(cartSessions, startOf('week',0), endOf('week',0));
+  const semPrev = countIn(cartSessions, startOf('week',-1), endOf('week',-1));
+  const mesCurr = countIn(cartSessions, startOf('month',0), endOf('month',0));
+  const mesPrev = countIn(cartSessions, startOf('month',-1), endOf('month',-1));
+  const anoCurr = countIn(cartSessions, startOf('year',0), endOf('year',0));
+  const anoPrev = countIn(cartSessions, startOf('year',-1), endOf('year',-1));
 
-  // Mês atual vs mês passado
-  const mesCurr = countIn(cartSessions, startOf('month', 0), endOf('month', 0));
-  const mesPrev = countIn(cartSessions, startOf('month', -1), endOf('month', -1));
-
-  // Ano atual vs ano passado
-  const anoCurr = countIn(cartSessions, startOf('year', 0), endOf('year', 0));
-  const anoPrev = countIn(cartSessions, startOf('year', -1), endOf('year', -1));
-
-  // Atualiza DOM
-  const elSem    = document.getElementById('hs-semana');
-  const elSemT   = document.getElementById('hs-semana-trend');
-  const elMes    = document.getElementById('hs-mes');
-  const elMesT   = document.getElementById('hs-mes-trend');
-  const elAno    = document.getElementById('hs-ano');
-  const elAnoT   = document.getElementById('hs-ano-trend');
-  const elLabel  = document.getElementById('hs-cart-label');
-
-  // Atualiza label com nome legível do cartucho em foco
-  if (elLabel) {
-    const row = document.querySelector('.carts-row');
-    const focused = row && row.querySelector(`.cart-card[data-cart-id="${cartId}"] .cart-title`);
-    const cartName = focused ? focused.textContent : (cartId || '').replace(/-/g, ' ').toUpperCase();
-    elLabel.textContent = cartName ? `— ${cartName} —` : '';
-  }
+  const elSem  = document.getElementById('hs-semana');
+  const elSemT = document.getElementById('hs-semana-trend');
+  const elMes  = document.getElementById('hs-mes');
+  const elMesT = document.getElementById('hs-mes-trend');
+  const elAno  = document.getElementById('hs-ano');
+  const elAnoT = document.getElementById('hs-ano-trend');
 
   if (elSem)  elSem.textContent  = semCurr;
   if (elSemT) { elSemT.textContent = trendLabel(semCurr, semPrev, 'sem'); elSemT.style.color = trendColor(semCurr, semPrev); }
@@ -3081,15 +3149,35 @@ function renderHomeStats() {
   if (elAnoT) { elAnoT.textContent = trendLabel(anoCurr, anoPrev, 'ano'); elAnoT.style.color = trendColor(anoCurr, anoPrev); }
 }
 
-// Listener: ao scrollar o carrossel de cartuchos, atualiza os stats
+// Inicialização: aplicar seleção padrão + listener de scroll
 (function initCartsScrollListener() {
   function attach() {
     const row = document.querySelector('.carts-row');
     if (!row) { setTimeout(attach, 300); return; }
+
+    // Seleção inicial
+    applyCartFocusUI(_focusedCartId);
+    renderHomeStats();
+
+    // Swipe no carrossel também muda seleção
     let scrollTimer;
     row.addEventListener('scroll', () => {
       clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(renderHomeStats, 120);
+      scrollTimer = setTimeout(() => {
+        const cards = row.querySelectorAll('.cart-card[data-cart-id]');
+        const rowCenter = row.scrollLeft + row.offsetWidth / 2;
+        let best = null, bestDist = Infinity;
+        cards.forEach(card => {
+          const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+          const dist = Math.abs(cardCenter - rowCenter);
+          if (dist < bestDist) { bestDist = dist; best = card.dataset.cartId; }
+        });
+        if (best && best !== _focusedCartId) {
+          _focusedCartId = best;
+          applyCartFocusUI(best);
+          renderHomeStats();
+        }
+      }, 120);
     }, { passive: true });
   }
   attach();
@@ -3526,30 +3614,109 @@ function runFinish() {
   runState.running = false;
   releaseWakeLock();
 
-  // Salvar sessão no histórico
   const prog = RUN_PROGRAMS[runState.program];
+  const now = new Date();
+  const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const dateStr = now.getDate() + ' ' + months[now.getMonth()];
+
+  // Salvar sessão
+  const completedStages = runState.stageIdx; // quantas etapas finalizaram
+  const totalStages = runState.stages.length;
   const session = {
     id: Date.now(),
-    date: new Date().toLocaleDateString('pt-BR'),
+    date: dateStr,
     dateMs: Date.now(),
     program: runState.program,
     programTitle: prog ? prog.title : 'Corrida',
     cartridge: 'CORRIDA FUTEBOL',
     cartridgeId: 'corrida-futebol',
     duration: runState.totalSec,
-    sets: runState.stages.length,
-    totalSets: runState.stages.length,
+    sets: completedStages,
+    totalSets: totalStages,
     volume: 0,
     hasPR: false,
     loads: [],
+    runStages: runState.stages.map((s, i) => ({ ...s, done: i < runState.stageIdx })),
   };
   state.history.sessions = state.history.sessions || [];
   state.history.sessions.unshift(session);
   saveSessionsToStorage();
   renderHistory();
-  goTo('home');
-  // Toast de parabéns
-  setTimeout(() => alert('🏃 Treino de corrida concluído! ' + fmtRun(runState.totalSec) + ' no total.'), 300);
+
+  // Popular tela de report
+  const title = document.getElementById('run-rp-title');
+  const sub = document.getElementById('run-rp-sub');
+  const dur = document.getElementById('run-rp-duration');
+  const stagesEl = document.getElementById('run-rp-stages');
+  const stagesPct = document.getElementById('run-rp-stages-pct');
+  const calEl = document.getElementById('run-rp-cal');
+  const paceEl = document.getElementById('run-rp-pace');
+  const paceSub = document.getElementById('run-rp-pace-sub');
+  const stagesList = document.getElementById('run-rp-stages-list');
+
+  const isComplete = completedStages >= totalStages;
+  if (title) title.textContent = isComplete ? 'corrida concluída' : 'treino encerrado';
+  if (sub) sub.textContent = (prog ? prog.title : '') + ' · CORRIDA FUTEBOL';
+  if (dur) dur.textContent = fmtRun(runState.totalSec);
+  if (stagesEl) stagesEl.textContent = completedStages + '/' + totalStages;
+  if (stagesPct) {
+    const pct = Math.round((completedStages / totalStages) * 100);
+    stagesPct.textContent = pct + '% completas';
+    stagesPct.className = 'rp-stat-trend ' + (pct === 100 ? 'up' : 'neutral');
+  }
+
+  // Estimativa de calorias (MET corrida ~8, peso 75kg)
+  const calEst = Math.round((runState.totalSec / 3600) * 8 * 75);
+  if (calEl) { calEl.innerHTML = calEst + '<span style="font-size:12px">kcal</span>'; }
+
+  // Pace estimado baseado na duração e distância (assume ~10 km/h Z2, ~13 blocos)
+  const totalMin = runState.totalSec / 60;
+  const distKm = prog && prog.stages
+    ? runState.stages.slice(0, completedStages).reduce((a, s) => {
+        const isIntense = RUN_INTENSE_LABELS.has(s.label);
+        const speed = isIntense ? 13 : 8.5; // km/h
+        return a + (s.durationSec / 3600) * speed;
+      }, 0)
+    : totalMin / 7;
+  if (distKm > 0.1) {
+    const pace = totalMin / distKm;
+    const pm = Math.floor(pace), ps = Math.round((pace - pm) * 60);
+    if (paceEl) paceEl.textContent = pm + ':' + String(ps).padStart(2,'0');
+    if (paceSub) paceSub.textContent = `~${distKm.toFixed(1)} km est.`;
+  }
+
+  // Lista de etapas com check/status
+  if (stagesList) {
+    stagesList.innerHTML = runState.stages.map((s, i) => {
+      const done = i < completedStages;
+      const active = i === completedStages && !isComplete;
+      const color = RUN_LABEL_COLOR[s.label] || '#38a5ff';
+      const isIntense = RUN_INTENSE_LABELS.has(s.label);
+      const c = done ? '#00FFC2' : active ? color : 'rgba(255,255,255,.25)';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);">
+        <div style="width:22px;height:22px;border-radius:6px;background:${done ? 'rgba(0,255,194,.12)' : isIntense ? 'rgba(255,80,80,.08)' : 'rgba(56,165,255,.08)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;">${done ? '✓' : active ? '▶' : String(i+1).padStart(2,'0')}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:${c};letter-spacing:1px;">${s.label}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,${done ? '.45' : '.65'});margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.desc.length > 50 ? s.desc.slice(0,50)+'…' : s.desc}</div>
+        </div>
+        <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:${done ? 'rgba(0,255,194,.5)' : 'rgba(255,255,255,.25)'};flex-shrink:0;">${fmtRunMin(s.durationSec)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Registrar screen no histórico de nav para goBack funcionar
+  goTo('run-report');
+}
+
+function shareRunReport() {
+  const prog = RUN_PROGRAMS[runState.program];
+  const text = `🏃 ${prog ? prog.title : 'Corrida'} · ${fmtRun(runState.totalSec)} · CORRIDA FUTEBOL #GBF`;
+  if (navigator.share) {
+    navigator.share({ title: 'GameboyFit · Corrida', text }).catch(() => {});
+  } else {
+    navigator.clipboard && navigator.clipboard.writeText(text);
+    alert('Resultado copiado!');
+  }
 }
 let wakeLock = null;
 
@@ -3811,6 +3978,72 @@ document.addEventListener('visibilitychange', () => {
   </div>
 
 
+</div>
+<!-- ======================================================
+     SCREEN: CORRIDA REPORT
+     ====================================================== -->
+<div class="screen" id="screen-run-report">
+  <div class="rp-content">
+
+    <!-- HERO -->
+    <div class="rp-hero">
+      <div class="rp-trophy" style="filter:hue-rotate(200deg);">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="tg2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#38a5ff"/>
+              <stop offset=".5" stop-color="#0080ff"/>
+              <stop offset="1" stop-color="#003a7a"/>
+            </linearGradient>
+          </defs>
+          <!-- Corredor estilizado -->
+          <circle cx="62" cy="22" r="10" fill="url(#tg2)" opacity=".9"/>
+          <path d="M55 35 Q52 50 44 60 L36 74" stroke="url(#tg2)" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <path d="M53 42 Q42 40 34 46" stroke="url(#tg2)" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M56 42 Q66 36 74 42" stroke="url(#tg2)" stroke-width="5" stroke-linecap="round" fill="none" opacity=".6"/>
+          <path d="M44 60 Q34 70 26 80 Q22 86 28 88 Q34 88 40 78 L46 66" stroke="url(#tg2)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+          <path d="M44 60 Q52 68 58 76 Q64 84 70 78 Q76 72 68 66 L58 60" stroke="url(#tg2)" stroke-width="5.5" stroke-linecap="round" fill="none" opacity=".7"/>
+          <!-- linha de chegada -->
+          <line x1="15" y1="90" x2="85" y2="90" stroke="url(#tg2)" stroke-width="2" stroke-dasharray="5 3" opacity=".5"/>
+        </svg>
+      </div>
+      <div class="rp-title" id="run-rp-title">corrida concluída</div>
+      <div class="rp-sub" id="run-rp-sub">Z2 Contínuo · CORRIDA FUTEBOL</div>
+    </div>
+
+    <!-- STATS PRINCIPAIS -->
+    <div class="rp-stats" id="run-rp-stats">
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">DURAÇÃO</div>
+        <div class="rp-stat-val" id="run-rp-duration">00:00</div>
+        <div class="rp-stat-trend neutral">tempo total</div>
+      </div>
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">ETAPAS</div>
+        <div class="rp-stat-val" id="run-rp-stages">0</div>
+        <div class="rp-stat-trend up" id="run-rp-stages-pct">100% completas</div>
+      </div>
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">CALORIAS</div>
+        <div class="rp-stat-val" id="run-rp-cal">—</div>
+        <div class="rp-stat-trend neutral">est. MET</div>
+      </div>
+      <div class="rp-stat">
+        <div class="rp-stat-lbl">PACE MÉD.</div>
+        <div class="rp-stat-val" id="run-rp-pace">—</div>
+        <div class="rp-stat-trend neutral" id="run-rp-pace-sub">min/km est.</div>
+      </div>
+    </div>
+
+    <!-- ETAPAS CONCLUÍDAS -->
+    <div class="rp-section">
+      <div class="rp-sect-title">ETAPAS DO TREINO</div>
+      <div id="run-rp-stages-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+
+    <button class="btn-primary" style="background:linear-gradient(135deg,#0060cc,#003a7a);border-color:#38a5ff22;margin-top:8px;" onclick="shareRunReport()">↗ COMPARTILHAR RESULTADO</button>
+    <button class="btn-secondary" onclick="goHome()" style="margin-top:10px;">VOLTAR AO INÍCIO</button>
+  </div>
 </div>
 
 </div><!-- /.phone -->
