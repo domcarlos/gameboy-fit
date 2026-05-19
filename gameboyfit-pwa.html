@@ -3465,31 +3465,40 @@ function selectCartridgeStretch(id, name, author, sheets, weeks) {
 function selectStretch(key) {
   const prog = STRETCH_PROGRAMS[key];
   if (!prog) return;
-  // Monta exercises no formato padrão do workout engine, sem campos de carga
-  state.cartridge = state.cartridge || { id:'alongamento-diario', name:'ALONGAMENTO DIÁRIO' };
+
+  // Sobrescreve cartridge e program ANTES do reset
+  state.cartridge = { id:'alongamento-diario', name:'ALONGAMENTO DIÁRIO' };
   state.program = { label: prog.label, title: prog.title, focus: prog.focus };
+
+  // Monta exercises no formato do workout engine, sem carga
   state.exercises = prog.exercises.map((ex, i) => ({
     ...ex,
     idx: i,
+    status: 'pending',
     isStretch: true,
+    load: 0,
     usedLoad: 0,
     completedSeries: 0,
-    // Para exercícios com tempo, sets=1 e usa timeS
+    rest: 0,
+    lastLoad: '—',
     sets: ex.sets || 1,
     reps: ex.reps || 0,
   }));
-  state.currentExIdx = 0;
-  state.completedSets = 0;
-  state.totalSec = 0;
 
+  // Reset limpa timers e DOM da sessão anterior
+  resetWorkout();
+
+  // Marca primeiro como active e navega
+  state.exercises[0].status = 'active';
   goTo('workout');
   requestWakeLock();
 
+  // Constrói UI após navegação
   setTimeout(() => {
     buildExerciseList();
     buildProgramHeader();
-    selectExercise(0);
-    startTotalTimer();
+    loadExercise(0);
+    startGlobalTimer();
   }, 50);
 }
 
