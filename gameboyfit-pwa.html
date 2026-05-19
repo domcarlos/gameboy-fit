@@ -222,7 +222,8 @@ body {
   display: flex;
   gap: 14px;
   overflow-x: auto;
-  padding: 4px 20px 20px;
+  overflow-y: visible;
+  padding: 16px 20px 20px;
   scrollbar-width: none;
   scroll-snap-type: x mandatory;
 }
@@ -302,14 +303,14 @@ body {
   z-index: 4;
 }
 
-/* Borda dourada estilo card premium */
+/* Borda padrão (não selecionado) — cinza sutil */
 .cart-border {
   position: absolute;
   inset: 0;
   border-radius: 14px;
   border: 1.5px solid transparent;
   background:
-    linear-gradient(160deg, #FFD700 0%, #aa7800 30%, #FFD700 50%, #664400 70%, #FFD700 100%) border-box;
+    linear-gradient(160deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.06) 50%, rgba(255,255,255,.12) 100%) border-box;
   -webkit-mask:
     linear-gradient(#fff 0 0) padding-box,
     linear-gradient(#fff 0 0);
@@ -317,10 +318,15 @@ body {
           mask-composite: exclude;
   pointer-events: none;
   z-index: 5;
+  transition: background .3s;
 }
 
-/* Linha dourada no topo */
-.cart-stripe {
+/* Borda quando cartucho está selecionado — sempre dourada */
+.cart-card.selected-gold .cart-border,
+.cart-card.selected-blue .cart-border {
+  background:
+    linear-gradient(160deg, #FFD700 0%, #aa7800 30%, #FFD700 50%, #664400 70%, #FFD700 100%) border-box;
+}
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 4px;
@@ -1555,7 +1561,7 @@ body {
           </div>
         </div>
 
-        <div class="cart-border" style="background:linear-gradient(160deg,#38a5ff 0%,#0044aa 40%,#38a5ff 60%,#002266 80%,#38a5ff 100%) border-box;"></div>
+        <div class="cart-border"></div>
       </div>
     </div>
   </div>
@@ -3030,6 +3036,7 @@ const CART_CONFIG = {
 };
 
 let _focusedCartId = 'elite-futebol';
+let _scrollLock = false; // previne que o scroll listener reverta a seleção logo após um clique
 
 function focusCartridge(cartId) {
   if (_focusedCartId === cartId) {
@@ -3037,6 +3044,8 @@ function focusCartridge(cartId) {
     return;
   }
   _focusedCartId = cartId;
+  _scrollLock = true;
+  setTimeout(() => { _scrollLock = false; }, 600); // bloqueia o listener por 600ms
   applyCartFocusUI(cartId);
   renderHomeStats();
 }
@@ -3162,6 +3171,7 @@ function renderHomeStats() {
     // Swipe no carrossel também muda seleção
     let scrollTimer;
     row.addEventListener('scroll', () => {
+      if (_scrollLock) return; // ignorar scroll disparado por transform do clique
       clearTimeout(scrollTimer);
       scrollTimer = setTimeout(() => {
         const cards = row.querySelectorAll('.cart-card[data-cart-id]');
