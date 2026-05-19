@@ -1775,8 +1775,8 @@ body {
           <div class="wk-exec-btn">EXECUÇÃO</div>
         </div>
         <div class="wk-name-block">
-          <div class="wk-exname" id="wk-exname">HIP THRUST BARRA</div>
-          <div class="wk-exdesc" id="wk-exdesc">GLÚTEO MÁXIMO · POSTERIOR · CORE</div>
+          <div class="wk-exname" id="wk-exname"></div>
+          <div class="wk-exdesc" id="wk-exdesc"></div>
         </div>
       </div>
 
@@ -1986,7 +1986,7 @@ body {
 <div class="sheet" id="sheet">
   <div class="sheet-handle"></div>
   <div class="sheet-content">
-    <div class="sheet-title">HIP THRUST BARRA</div>
+    <div class="sheet-title" id="sheet-title-main"></div>
     <div class="sheet-sub">GLÚTEO MÁXIMO · POSTERIOR · CORE · 4 × 8 · 60KG</div>
     <div class="sheet-sb-title">STORYBOARD DE EXECUÇÃO</div>
     <div class="storyboard-grid">
@@ -3494,12 +3494,11 @@ function selectStretch(key) {
   requestWakeLock();
 
   // Constrói UI após navegação
-  setTimeout(() => {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     buildExerciseList();
-    buildProgramHeader();
     loadExercise(0);
     startGlobalTimer();
-  }, 50);
+  }));
 }
 
 const RUN_PROGRAMS = {
