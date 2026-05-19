@@ -862,6 +862,7 @@ body {
   border: 1px solid rgba(0,255,194,.1);
   flex-shrink: 0;
   overflow: hidden;
+  position: relative;
 }
 .wk-item-thumb svg { width: 100%; height: 100%; }
 .wk-ex-item.state-done .wk-item-thumb { border-color: rgba(0,255,194,.2); }
@@ -2199,13 +2200,9 @@ function buildExerciseList() {
 
     item.innerHTML = `
       <div class="wk-item-num">${String(idx + 1).padStart(2,'0')}</div>
-      <div class="wk-item-thumb">
-        <div class="ex-slideshow" id="wk-list-slide-${idx}" style="width:100%;height:100%;">
-          <img data-frame="0" src="" alt="" style="width:200%;height:200%;position:absolute;inset:0;object-fit:cover;opacity:0;transition:opacity .5s;">
-          <img data-frame="1" src="" alt="" style="width:200%;height:200%;position:absolute;inset:0;object-fit:cover;opacity:0;transition:opacity .5s;transform:translate(-50%,0);">
-          <img data-frame="2" src="" alt="" style="width:200%;height:200%;position:absolute;inset:0;object-fit:cover;opacity:0;transition:opacity .5s;transform:translate(0,-50%);">
-          <img data-frame="3" src="" alt="" style="width:200%;height:200%;position:absolute;inset:0;object-fit:cover;opacity:0;transition:opacity .5s;transform:translate(-50%,-50%);">
-        </div>
+      <div class="wk-item-thumb" id="wk-list-thumb-${idx}">
+        <img id="wk-list-img-${idx}" src="" alt=""
+          style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s;">
       </div>
       <div class="wk-item-info">
         <div style="display:flex;align-items:center;gap:6px;">
@@ -2221,11 +2218,19 @@ function buildExerciseList() {
 
   updateListDoneCount();
 
-  // Inicia slideshows na lista
+  // Carrega imagens nos thumbnails da lista
   state.exercises.forEach((ex, idx) => {
     const imgKey = ex.imageKey || null;
     const imgSrc = imgKey && EX_IMAGES[imgKey] ? EX_IMAGES[imgKey] : null;
-    if (imgSrc) setTimeout(() => startListSlideshow(idx, imgSrc), 80 + idx * 40);
+    if (imgSrc) {
+      const img = document.getElementById('wk-list-img-' + idx);
+      if (img) {
+        img.onload = () => { img.style.opacity = '1'; };
+        img.src = imgSrc;
+        // Se já estava em cache, forçar opacity
+        if (img.complete) img.style.opacity = '1';
+      }
+    }
   });
 }
 
@@ -2451,22 +2456,7 @@ function startSlideshow(imgSrc, containerId) {
 }
 
 function startListSlideshow(idx, imgSrc) {
-  const container = document.getElementById('wk-list-slide-' + idx);
-  if (!container) return;
-  const imgs = container.querySelectorAll('img');
-  if (!imgs.length || !imgSrc) return;
-
-  if (_listSlideshows[idx]) clearInterval(_listSlideshows[idx]);
-
-  imgs.forEach(img => { img.src = imgSrc; img.classList.remove('ss-active'); });
-  imgs[0].classList.add('ss-active');
-  let frame = 0;
-
-  _listSlideshows[idx] = setInterval(() => {
-    frame = (frame + 1) % 4;
-    imgs.forEach(img => img.classList.remove('ss-active'));
-    imgs[frame].classList.add('ss-active');
-  }, 2000);
+  // Substituído por img direta — mantido para compatibilidade
 }
 function showCTA() {
   document.getElementById('wk-rest').classList.remove('show');
