@@ -1946,34 +1946,33 @@ body {
       <div class="rp-stat">
         <div class="rp-stat-lbl">DURAÇÃO</div>
         <div class="rp-stat-val" id="rp-duration">00:00</div>
-        <div class="rp-stat-trend up">3min mais rápido</div>
+        <div class="rp-stat-trend neutral" id="rp-duration-trend">tempo total</div>
       </div>
       <div class="rp-stat">
         <div class="rp-stat-lbl">VOLUME</div>
-        <div class="rp-stat-val">8.7<span>t</span></div>
-        <div class="rp-stat-trend up">+12% vs último</div>
+        <div class="rp-stat-val" id="rp-volume">0<span>t</span></div>
+        <div class="rp-stat-trend neutral" id="rp-volume-trend">vs último</div>
       </div>
       <div class="rp-stat">
         <div class="rp-stat-lbl">CALORIAS</div>
-        <div class="rp-stat-val">487<span>kcal</span></div>
+        <div class="rp-stat-val" id="rp-cal">0<span>kcal</span></div>
         <div class="rp-stat-trend neutral">est. MET</div>
       </div>
       <div class="rp-stat">
         <div class="rp-stat-lbl">SÉRIES</div>
-        <div class="rp-stat-val" id="rp-sets">28<span>/28</span></div>
-        <div class="rp-stat-trend up">100% completas</div>
+        <div class="rp-stat-val" id="rp-sets">0<span>/0</span></div>
+        <div class="rp-stat-trend up" id="rp-sets-trend">completas</div>
       </div>
     </div>
 
     <div class="rp-section">
-      <div class="rp-sect-title">EVOLUÇÃO DE CARGA</div>
-      <div class="evo-list">
-        <div class="evo-row"><span class="evo-name">Hip Thrust</span><span class="evo-prev">57.5</span><span class="evo-arrow">→</span><span class="evo-now">60kg</span><span class="evo-delta up">+2.5</span></div>
-        <div class="evo-row"><span class="evo-name">Stiff / RDL</span><span class="evo-prev">42.5</span><span class="evo-arrow">→</span><span class="evo-now">45kg</span><span class="evo-delta up">+2.5</span></div>
-        <div class="evo-row"><span class="evo-name">Nordic Curl</span><span class="evo-prev">corp</span><span class="evo-arrow">→</span><span class="evo-now">corp</span><span class="evo-delta flat">—</span></div>
-        <div class="evo-row"><span class="evo-name">Afundo Uni.</span><span class="evo-prev">36</span><span class="evo-arrow">→</span><span class="evo-now">36kg</span><span class="evo-delta flat">—</span></div>
-        <div class="evo-row"><span class="evo-name">Mesa Flexora</span><span class="evo-prev">35</span><span class="evo-arrow">→</span><span class="evo-now down">30kg</span><span class="evo-delta down">-5</span></div>
-      </div>
+      <div class="rp-sect-title">RESUMO POR EXERCÍCIO</div>
+      <div id="rp-exercise-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <div class="rp-section" id="rp-evo-section">
+      <div class="rp-sect-title">EVOLUÇÃO DE CARGA vs TREINO ANTERIOR</div>
+      <div class="evo-list" id="rp-evo-list"></div>
     </div>
 
     <button class="btn-primary">↗ COMPARTILHAR CONQUISTA</button>
@@ -2149,8 +2148,8 @@ const state = {
       { name:'ROSCA DIRETA BARRA', desc:'BÍCEPS · FORÇA', sets:3, reps:8, rest:75, load:27.5, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'rosca_direta'},
       { name:'ROSCA MARTELO HALTERE', desc:'BÍCEPS · BRAQUIAL', sets:3, reps:10, rest:75, load:14, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'rosca_martelo'},
       { name:'TRÍCEPS TESTA BARRA', desc:'TRÍCEPS · FORÇA', sets:3, reps:8, rest:75, load:27.5, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'triceps_testa'},
-      { name:'PRANCHA ISOMÉTRICA', desc:'CORE · TRANSVERSO · GLÚTEOS · ISOMÉTRICO', sets:3, reps:1, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'prancha_isometrica', isTime:true, timeSeconds:45 },
-      { name:'ABDOMINAL SUPRA', desc:'RETO ABDOMINAL · CRUNCH CLÁSSICO', sets:3, reps:20, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'abdominal_supra'},
+      { name:'PRANCHA ISOMÉTRICA', desc:'CORE · TRANSVERSO · GLÚTEOS · ISOMÉTRICO', sets:3, reps:1, rest:0, load:0, lastLoad:'última: —', isFoco:false, conjugated:'ABDOMINAL SUPRA', imageKey:'prancha_isometrica', isTime:true, timeSeconds:45 },
+      { name:'ABDOMINAL SUPRA', desc:'RETO ABDOMINAL · CRUNCH CLÁSSICO', sets:3, reps:20, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:'PRANCHA ISOMÉTRICA', imageKey:'abdominal_supra'},
     ]
   },
 };
@@ -2221,6 +2220,8 @@ function selectProgram(label, title, focus, exCount, duration, muscles) {
     completedSeries: 0,
     usedLoad: ex.load,
   }));
+  applyStoredLoads(state.exercises);
+  state.exercises.forEach(ex => { ex.usedLoad = ex.load; });
   resetWorkout();
   state.exercises[0].status = 'active';
   buildExerciseList();
@@ -2422,6 +2423,39 @@ function selectExercise(idx) {
   loadExercise(idx);
 }
 
+function loadExerciseData(idx) {
+  // Atualiza apenas os campos do card principal (sem tocar no painel conjugado)
+  const ex = state.exercises[idx] || state.exercises[0];
+  state.currentLoad = ex.usedLoad || ex.load || 0;
+  state.totalSets = ex.sets;
+  state.currentExIdx = idx;
+
+  document.getElementById('wk-exname').textContent = ex.name;
+  document.getElementById('wk-exdesc').textContent = ex.desc;
+  document.getElementById('wk-sets').textContent = ex.sets;
+  const repsEl = document.getElementById('wk-reps');
+  if (ex.isStretch && ex.timeS > 0) repsEl.textContent = ex.timeS + 's';
+  else if (ex.isTime && ex.timeSeconds) repsEl.textContent = ex.timeSeconds + 's';
+  else repsEl.textContent = ex.reps;
+  document.getElementById('wk-rest-val').innerHTML = (ex.rest || 0) + '<span>s</span>';
+  document.getElementById('wk-load-val').textContent = state.currentLoad > 0 ? state.currentLoad : '—';
+  document.getElementById('wk-last-load').textContent = ex.lastLoad || '—';
+  document.getElementById('wk-ex-num').textContent = String(idx + 1).padStart(2,'0');
+
+  const loadPanel = document.getElementById('wk-load-panel');
+  if (loadPanel) loadPanel.style.display = ex.isStretch ? 'none' : '';
+
+  const focoTag = document.getElementById('wk-foco-tag');
+  focoTag.className = ex.isFoco ? 'wk-tag' : 'wk-tag hidden';
+
+  const startSeries = (ex.completedSeries || 0) + 1;
+  updateSeriesBars(startSeries, ex.sets, ex.completedSeries || 0);
+
+  const imgKey = ex.imageKey || null;
+  const imgSrc = imgKey && EX_IMAGES[imgKey] ? EX_IMAGES[imgKey] : null;
+  startSlideshow(imgSrc, 'wk-slideshow');
+}
+
 function loadExercise(idx) {
   const ex = state.exercises[idx] || state.exercises[0];
   state.currentLoad = ex.usedLoad || ex.load || 0;
@@ -2600,6 +2634,8 @@ function startSet() {
   state.isSetRunning = true;
   state.isSetPaused = false;
   state.setSec = 0;
+  state._setStartedAt = Date.now();
+  state._setPausedAccum = 0;
 
   showTimerMode();
 
@@ -2612,10 +2648,10 @@ function startSet() {
   clearInterval(state.setInterval);
   state.setInterval = setInterval(() => {
     if (state.isSetPaused || state.isGlobalPaused) return;
-    state.setSec++;
+    state.setSec = Math.floor((Date.now() - state._setStartedAt - state._setPausedAccum) / 1000);
     const el = document.getElementById('wk-t-val');
     if (el) el.textContent = fmt(state.setSec);
-  }, 1000);
+  }, 500);
 }
 
 /* PAUSAR SÉRIE */
@@ -2625,11 +2661,16 @@ function toggleSetPause() {
   const status = document.getElementById('wk-t-status');
   const val = document.getElementById('wk-t-val');
   if (state.isSetPaused) {
+    state._setPauseStart = Date.now();
     btn.textContent = 'CONTINUAR';
     status.textContent = 'PAUSADO';
     status.className = 'wk-t-status paused';
     val.className = 'wk-t-val paused';
   } else {
+    if (state._setPauseStart) {
+      state._setPausedAccum = (state._setPausedAccum || 0) + (Date.now() - state._setPauseStart);
+      state._setPauseStart = null;
+    }
     btn.textContent = 'PAUSAR';
     status.textContent = 'EXECUTANDO';
     status.className = 'wk-t-status';
@@ -2690,6 +2731,7 @@ function finishSet() {
       state.exercises[bIdx].status = 'active';
       refreshListItem(aIdx);
       refreshListItem(bIdx);
+      loadExerciseData(bIdx);            // atualiza card principal (nome/desc/carga/thumb)
       renderConjugatedCard(aIdx, bIdx, bIdx); // acende B
       showCTA();
       return;
@@ -2849,11 +2891,13 @@ function startRest(seconds, newExercise, targetIdx) {
 
   state.restInterval = setInterval(() => {
     if (state.isGlobalPaused) return;
-    state.restSec--;
+    const elapsed = Math.floor((Date.now() - state._restStartedAt) / 1000);
+    state.restSec = Math.max(0, seconds - elapsed);
     const el = document.getElementById('wk-rest-timer');
-    if (el) el.textContent = Math.max(0, state.restSec);
+    if (el) el.textContent = state.restSec;
     if (state.restSec <= 0) endRest();
-  }, 1000);
+  }, 500);
+  state._restStartedAt = Date.now();
 }
 
 function endRest() {
@@ -2952,20 +2996,130 @@ function finishWorkout() {
     volume: isStretch ? 0 : state.exercises.reduce((a,e) => a + (e.usedLoad||0) * e.sets * e.reps, 0),
     hasPR: !isStretch && state.completedSets > 0,
     loads: isStretch ? [] : state.exercises.filter(ex => ex.completedSeries > 0).map(ex => ({ name: ex.name, load: ex.usedLoad || 0 })),
+    exerciseDetails: state.exercises.map(ex => ({
+      name: ex.name,
+      muscles: ex.desc || ex.muscles || '',
+      sets: ex.sets,
+      reps: ex.reps,
+      completedSeries: ex.completedSeries || 0,
+      load: ex.usedLoad || 0,
+      rest: ex.rest || 0,
+      timeS: ex.timeS || ex.timeSeconds || 0,
+      isStretch: !!ex.isStretch,
+      done: ex.status === 'done',
+    })),
   };
   state.history.sessions = state.history.sessions || [];
   state.history.sessions.unshift(session);
   saveSessionsToStorage();
+
+  if (!isStretch) {
+    const loadsMap = {};
+    state.exercises.forEach(ex => {
+      if ((ex.usedLoad || 0) > 0) loadsMap[ex.name] = ex.usedLoad;
+    });
+    saveLoadsToStorage(loadsMap);
+  }
   renderHistory();
 
   if (isStretch) {
     populateStretchReport(session);
     goTo('stretch-report');
   } else {
-    document.getElementById('rp-duration').textContent = fmt(state.totalSec);
-    document.getElementById('rp-sets').innerHTML = state.completedSets + '<span>/' + session.totalSets + '</span>';
-    if (state.program) document.getElementById('rp-sub').textContent = 'Treino ' + state.program.label + ' · ' + state.program.title;
+    populateStrengthReport(session);
     goTo('report');
+  }
+}
+
+function populateStrengthReport(session) {
+  const el = id => document.getElementById(id);
+
+  const prevSession = state.history.sessions.find(s =>
+    s.id !== session.id &&
+    s.cartridgeId === session.cartridgeId &&
+    s.program === session.program
+  );
+
+  if (el('rp-duration')) el('rp-duration').textContent = fmt(session.duration);
+  if (el('rp-duration-trend') && prevSession) {
+    const diff = session.duration - prevSession.duration;
+    const m = Math.round(Math.abs(diff) / 60);
+    el('rp-duration-trend').textContent = diff < 0 ? `${m}min mais rápido` : diff > 0 ? `${m}min mais lento` : 'mesmo tempo';
+    el('rp-duration-trend').className = 'rp-stat-trend ' + (diff <= 0 ? 'up' : 'neutral');
+  }
+
+  const volT = (session.volume / 1000).toFixed(1);
+  if (el('rp-volume')) el('rp-volume').innerHTML = volT + '<span>t</span>';
+  if (el('rp-volume-trend') && prevSession && prevSession.volume > 0) {
+    const pct = Math.round(((session.volume - prevSession.volume) / prevSession.volume) * 100);
+    el('rp-volume-trend').textContent = (pct >= 0 ? '+' : '') + pct + '% vs último';
+    el('rp-volume-trend').className = 'rp-stat-trend ' + (pct >= 0 ? 'up' : 'down');
+  }
+
+  const calEst = Math.round((session.duration / 3600) * 6 * 75);
+  if (el('rp-cal')) el('rp-cal').innerHTML = calEst + '<span>kcal</span>';
+
+  if (el('rp-sets')) el('rp-sets').innerHTML = session.sets + '<span>/' + session.totalSets + '</span>';
+  if (el('rp-sets-trend')) {
+    const pct = Math.round((session.sets / session.totalSets) * 100);
+    el('rp-sets-trend').textContent = pct + '% completas';
+  }
+
+  if (el('rp-sub') && state.program) el('rp-sub').textContent = 'Treino ' + state.program.label + ' · ' + state.program.title;
+
+  const list = el('rp-exercise-list');
+  if (list) {
+    list.innerHTML = (session.exerciseDetails || []).map(ex => {
+      const done = ex.done;
+      const loadLabel = ex.load > 0 ? ex.load + 'kg' : 'corporal';
+      const timeLabel = ex.timeS > 0 ? ` · ${ex.timeS}s` : '';
+      const restLabel = ex.rest > 0 ? ` · desc. ${ex.rest}s` : ' · sem desc.';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;
+        background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);">
+        <div style="width:24px;height:24px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+          background:${done ? 'rgba(0,255,194,.12)' : 'rgba(255,255,255,.04)'};font-size:12px;color:${done ? '#00FFC2' : 'rgba(255,255,255,.3)'};">
+          ${done ? '✓' : '○'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:${done ? '#fff' : 'rgba(255,255,255,.45)'};
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ex.name}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.35);margin-top:3px;">
+            ${ex.completedSeries}/${ex.sets} séries · ${loadLabel}${timeLabel}${restLabel}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const evoList = el('rp-evo-list');
+  const evoSection = el('rp-evo-section');
+  if (evoList) {
+    const prevLoads = {};
+    if (prevSession && prevSession.exerciseDetails) {
+      prevSession.exerciseDetails.forEach(ex => { prevLoads[ex.name] = ex.load; });
+    }
+    const rows = (session.exerciseDetails || [])
+      .filter(ex => ex.load > 0 || prevLoads[ex.name] > 0)
+      .map(ex => {
+        const prev = prevLoads[ex.name];
+        const now = ex.load;
+        const prevTxt = prev > 0 ? prev : 'corp';
+        const nowTxt = now > 0 ? now + 'kg' : 'corp';
+        let delta = '—', cls = 'flat';
+        if (prev != null && now > 0 && prev > 0) {
+          const d = now - prev;
+          if (d > 0) { delta = '+' + d; cls = 'up'; }
+          else if (d < 0) { delta = '' + d; cls = 'down'; }
+        } else if (prev == null) {
+          delta = 'novo'; cls = 'up';
+        }
+        const shortName = ex.name.length > 16 ? ex.name.slice(0,16) + '…' : ex.name;
+        return `<div class="evo-row"><span class="evo-name">${shortName}</span><span class="evo-prev">${prevTxt}</span><span class="evo-arrow">→</span><span class="evo-now${cls==='down'?' down':''}">${nowTxt}</span><span class="evo-delta ${cls}">${delta}</span></div>`;
+      });
+    if (rows.length > 0) {
+      evoList.innerHTML = rows.join('');
+      if (evoSection) evoSection.style.display = '';
+    } else {
+      if (evoSection) evoSection.style.display = 'none';
+    }
   }
 }
 
@@ -3422,6 +3576,7 @@ function closeSheet() {
    PERSISTÊNCIA — localStorage
    ================================================================= */
 const STORAGE_KEY = 'gameboyfit_sessions_v1';
+const LOADS_KEY = 'gameboyfit_loads_v1';
 
 function saveSessionsToStorage() {
   try {
@@ -3435,6 +3590,30 @@ function loadSessionsFromStorage() {
     if (raw) return JSON.parse(raw);
   } catch(e) {}
   return null;
+}
+
+function saveLoadsToStorage(loadsMap) {
+  try {
+    const existing = loadLoadsFromStorage();
+    const merged = { ...existing, ...loadsMap };
+    localStorage.setItem(LOADS_KEY, JSON.stringify(merged));
+  } catch(e) {}
+}
+function loadLoadsFromStorage() {
+  try {
+    const raw = localStorage.getItem(LOADS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {};
+}
+function applyStoredLoads(exercises) {
+  const stored = loadLoadsFromStorage();
+  exercises.forEach(ex => {
+    if (stored[ex.name] != null && stored[ex.name] > 0) {
+      ex.load = stored[ex.name];
+      ex.lastLoad = stored[ex.name] + 'kg';
+    }
+  });
 }
 
 // Carrega histórico do localStorage (vazio na primeira abertura)
