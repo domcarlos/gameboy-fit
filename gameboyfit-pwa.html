@@ -1456,40 +1456,9 @@ body {
   padding: 8px 16px 60px;
   overscroll-behavior: contain;
   scroll-behavior: auto;
-  position: relative;
 }
 .w2-scroll::-webkit-scrollbar { display: none; }
 .w2-spacer { display: none; }
-
-/* Botões laterais de navegação */
-.w2-nav {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 5;
-  pointer-events: none;
-}
-.w2-nav-btn {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: rgba(0,255,194,.12);
-  border: 1px solid rgba(0,255,194,.35);
-  color: #00FFC2;
-  font-size: 18px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  pointer-events: auto;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  transition: opacity .2s, transform .1s;
-  box-shadow: 0 4px 12px rgba(0,0,0,.4);
-}
-.w2-nav-btn:active { transform: scale(.9); }
-.w2-nav-btn.disabled { opacity: .25; pointer-events: none; }
 
 /* Bloco de exercício */
 .w2-ex {
@@ -1502,7 +1471,9 @@ body {
   opacity: .5;
 }
 /* Colapsado (não central) */
-.w2-ex.collapsed { cursor: default; }
+.w2-ex.collapsed { cursor: pointer; }
+.w2-ex.collapsed:hover { opacity: .75; border-color: rgba(0,255,194,.2); }
+.w2-ex.collapsed:active { opacity: .9; }
 .w2-ex.collapsed .w2-ex-body { display: none; }
 .w2-ex.collapsed .w2-ex-head { padding: 16px; }
 
@@ -2132,12 +2103,6 @@ body {
 
   <div class="w2-scroll" id="w2-scroll">
     <div id="w2-ex-container"><!-- exercícios via JS --></div>
-
-    <!-- Botões de navegação lateral -->
-    <div class="w2-nav">
-      <div class="w2-nav-btn" id="w2-nav-up" onclick="navExercise(-1)">▲</div>
-      <div class="w2-nav-btn" id="w2-nav-down" onclick="navExercise(1)">▼</div>
-    </div>
   </div>
 </div>
 
@@ -2912,6 +2877,13 @@ function renderExerciseV2(idx) {
 
   el.className = 'w2-ex' + (isFocused ? ' focused' : ' collapsed') + (bothDone ? ' done' : '');
 
+  // Onclick: só ativo quando colapsado
+  if (isFocused) {
+    el.onclick = null;
+  } else {
+    el.onclick = () => focusAndSnap(idx, true);
+  }
+
   // Colapsado - só header
   if (!isFocused) {
     const displayName = isConj ? `${ex.name} + ${partner.ex.name}` : ex.name;
@@ -3335,68 +3307,12 @@ function focusAndSnap(idx, smooth) {
   }
   w2.focusedIdx = idx;
   renderAllV2();
-  updateNavButtons();
   requestAnimationFrame(() => snapToExercise(idx, smooth));
 }
 
-// Lista de índices dos blocos visíveis (pula B de conjugado)
-function visibleExerciseIndices() {
-  const list = [];
-  state.exercises.forEach((ex, i) => { if (!isConjugatedPartB(i)) list.push(i); });
-  return list;
-}
-
-// Navegação por botão: -1 = anterior, +1 = próximo
-function navExercise(direction) {
-  const visible = visibleExerciseIndices();
-  const currentPos = visible.indexOf(w2.focusedIdx);
-  const nextPos = currentPos + direction;
-  if (nextPos < 0 || nextPos >= visible.length) return;
-  focusAndSnap(visible[nextPos], true);
-}
-
-function updateNavButtons() {
-  const visible = visibleExerciseIndices();
-  const currentPos = visible.indexOf(w2.focusedIdx);
-  const upBtn = document.getElementById('w2-nav-up');
-  const downBtn = document.getElementById('w2-nav-down');
-  if (upBtn) upBtn.classList.toggle('disabled', currentPos <= 0);
-  if (downBtn) downBtn.classList.toggle('disabled', currentPos >= visible.length - 1);
-}
-
-// Observer minimalista: só re-renderiza foco visual se um bloco DIFERENTE ficar acima da linha do topo por muito tempo
-// (mas NÃO faz scroll — usuário no controle)
-function initSnapObserver() {
-  const scroll = document.getElementById('w2-scroll');
-  if (!scroll) return;
-  let ticking = false;
-  scroll.addEventListener('scroll', () => {
-    if (w2.runningSet || w2.resting) return;
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(() => {
-      ticking = false;
-      const scrollRect = scroll.getBoundingClientRect();
-      const focusLine = scrollRect.top + 100;
-      const visible = visibleExerciseIndices();
-      let best = w2.focusedIdx;
-      for (const idx of visible) {
-        const el = document.getElementById('w2-ex-' + idx);
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        if (r.top <= focusLine && r.bottom > focusLine) {
-          best = idx;
-          break;
-        }
-      }
-      if (best !== w2.focusedIdx) {
-        w2.focusedIdx = best;
-        renderAllV2();
-        updateNavButtons();
-      }
-    });
-  }, { passive: true });
-}
+// Stubs para não quebrar chamadas antigas
+function initSnapObserver() {}
+function updateNavButtons() {}
 
 function startGlobalTimerV2() {
   clearInterval(state.totalInterval);
