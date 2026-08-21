@@ -1447,32 +1447,59 @@ body {
 .w2-prog-track { flex: 1; height: 4px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; }
 .w2-prog-fill { height: 100%; background: linear-gradient(90deg, #00FFC2, #00a582); border-radius: 2px; transition: width .4s; }
 
-/* Área de scroll com snap programático controlado (sem snap CSS pra não brigar) */
+/* Área de scroll — card no topo, sem centralização artificial */
 .w2-scroll {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 0 16px;
+  padding: 8px 16px 60px;
   overscroll-behavior: contain;
   scroll-behavior: auto;
+  position: relative;
 }
 .w2-scroll::-webkit-scrollbar { display: none; }
-/* Espaçador para permitir o primeiro/último item centralizar */
-.w2-spacer { height: 30vh; flex-shrink: 0; }
-@media (min-width: 500px) { .w2-spacer { height: 280px; } }
+.w2-spacer { display: none; }
+
+/* Botões laterais de navegação */
+.w2-nav {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 5;
+  pointer-events: none;
+}
+.w2-nav-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(0,255,194,.12);
+  border: 1px solid rgba(0,255,194,.35);
+  color: #00FFC2;
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity .2s, transform .1s;
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+.w2-nav-btn:active { transform: scale(.9); }
+.w2-nav-btn.disabled { opacity: .25; pointer-events: none; }
 
 /* Bloco de exercício */
 .w2-ex {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   border-radius: 18px;
   border: 1.5px solid rgba(255,255,255,.06);
   background: rgba(255,255,255,.015);
   overflow: hidden;
-  transition: border-color .3s, background .3s, opacity .3s, transform .3s;
-  opacity: .45;
-  transform: scale(.97);
-  transform-origin: center center;
+  transition: border-color .15s, background .15s, opacity .15s;
+  opacity: .5;
 }
 /* Colapsado (não central) */
 .w2-ex.collapsed { cursor: default; }
@@ -1482,7 +1509,6 @@ body {
 /* Central em destaque */
 .w2-ex.focused {
   opacity: 1;
-  transform: scale(1);
   border-color: rgba(0,255,194,.3);
   background: linear-gradient(160deg, rgba(0,255,194,.05), rgba(0,255,194,.01));
   box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 0 40px rgba(0,255,194,.06);
@@ -2105,9 +2131,13 @@ body {
   </div>
 
   <div class="w2-scroll" id="w2-scroll">
-    <div class="w2-spacer"></div>
     <div id="w2-ex-container"><!-- exercícios via JS --></div>
-    <div class="w2-spacer"></div>
+
+    <!-- Botões de navegação lateral -->
+    <div class="w2-nav">
+      <div class="w2-nav-btn" id="w2-nav-up" onclick="navExercise(-1)">▲</div>
+      <div class="w2-nav-btn" id="w2-nav-down" onclick="navExercise(1)">▼</div>
+    </div>
   </div>
 </div>
 
@@ -2824,7 +2854,8 @@ function startWorkoutV2() {
   requestAnimationFrame(() => requestAnimationFrame(() => {
     buildWorkoutV2();
     startGlobalTimerV2();
-    // Centraliza primeiro exercício sem animação
+    updateNavButtons();
+    // Alinha primeiro exercício no topo (sem animação)
     requestAnimationFrame(() => snapToExercise(w2.focusedIdx, false));
     initSnapObserver();
   }));
@@ -3290,87 +3321,80 @@ function snapToExercise(idx, smooth) {
   const el = document.getElementById('w2-ex-' + idx);
   const scroll = document.getElementById('w2-scroll');
   if (!el || !scroll) return;
-  // Usa getBoundingClientRect: mais confiável que offsetTop quando há transforms/scales
+  // Alinha topo do elemento com topo do scroll (com margem)
   const scrollRect = scroll.getBoundingClientRect();
   const elRect = el.getBoundingClientRect();
-  // Distância do centro do elemento ao centro da viewport de scroll
-  const delta = (elRect.top + elRect.height / 2) - (scrollRect.top + scrollRect.height / 2);
-  const target = scroll.scrollTop + delta;
-  // Marca que o scroll é programático (para o listener não brigar)
-  w2._programmaticScroll = true;
-  scroll.scrollTo({ top: target, behavior: smooth ? 'smooth' : 'auto' });
-  clearTimeout(w2._progScrollClear);
-  w2._progScrollClear = setTimeout(() => { w2._programmaticScroll = false; }, smooth ? 500 : 100);
+  const delta = elRect.top - scrollRect.top - 8;
+  scroll.scrollTo({ top: scroll.scrollTop + delta, behavior: smooth ? 'smooth' : 'auto' });
 }
 
-// Muda foco e faz snap com render em duas fases para evitar medição em layout instável
 function focusAndSnap(idx, smooth) {
   if (isConjugatedPartB(idx)) {
     const p = getConjugatedPartner(idx);
     if (p) idx = p.idx;
   }
-  const scroll = document.getElementById('w2-scroll');
-  if (!scroll) return;
-  // 1. Guarda posição do topo do elemento ANTES do re-render (compensação anti-jump)
-  const oldEl = document.getElementById('w2-ex-' + idx);
-  const oldRect = oldEl ? oldEl.getBoundingClientRect() : null;
-  const scrollRect = scroll.getBoundingClientRect();
-  const oldOffset = oldRect ? (oldRect.top - scrollRect.top) : null;
-
   w2.focusedIdx = idx;
   renderAllV2();
-
-  // 2. Após render, mede a nova posição e ajusta o scroll suavemente
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    const newEl = document.getElementById('w2-ex-' + idx);
-    if (!newEl) return;
-    // Se sabemos onde o item estava, primeiro ajusta o scroll para manter ele no mesmo lugar visual
-    // (evita o "salto" que o usuário sente), depois centraliza suavemente
-    if (oldOffset !== null && !smooth) {
-      const newRect = newEl.getBoundingClientRect();
-      const newOffset = newRect.top - scrollRect.top;
-      const diff = newOffset - oldOffset;
-      if (Math.abs(diff) > 1) {
-        // Ajuste instantâneo para manter posição visual
-        w2._programmaticScroll = true;
-        scroll.scrollTop += diff;
-      }
-    }
-    // Agora centraliza suavemente
-    snapToExercise(idx, true);
-  }));
+  updateNavButtons();
+  requestAnimationFrame(() => snapToExercise(idx, smooth));
 }
 
+// Lista de índices dos blocos visíveis (pula B de conjugado)
+function visibleExerciseIndices() {
+  const list = [];
+  state.exercises.forEach((ex, i) => { if (!isConjugatedPartB(i)) list.push(i); });
+  return list;
+}
+
+// Navegação por botão: -1 = anterior, +1 = próximo
+function navExercise(direction) {
+  const visible = visibleExerciseIndices();
+  const currentPos = visible.indexOf(w2.focusedIdx);
+  const nextPos = currentPos + direction;
+  if (nextPos < 0 || nextPos >= visible.length) return;
+  focusAndSnap(visible[nextPos], true);
+}
+
+function updateNavButtons() {
+  const visible = visibleExerciseIndices();
+  const currentPos = visible.indexOf(w2.focusedIdx);
+  const upBtn = document.getElementById('w2-nav-up');
+  const downBtn = document.getElementById('w2-nav-down');
+  if (upBtn) upBtn.classList.toggle('disabled', currentPos <= 0);
+  if (downBtn) downBtn.classList.toggle('disabled', currentPos >= visible.length - 1);
+}
+
+// Observer minimalista: só re-renderiza foco visual se um bloco DIFERENTE ficar acima da linha do topo por muito tempo
+// (mas NÃO faz scroll — usuário no controle)
 function initSnapObserver() {
   const scroll = document.getElementById('w2-scroll');
   if (!scroll) return;
-
-  let scrollIdleTimer;
+  let ticking = false;
   scroll.addEventListener('scroll', () => {
-    // Ignora scroll programático (o snapToExercise dispara scroll também)
-    if (w2._programmaticScroll) return;
-    // Não muda foco durante execução ou descanso
     if (w2.runningSet || w2.resting) return;
-
-    clearTimeout(scrollIdleTimer);
-    scrollIdleTimer = setTimeout(() => {
-      // Encontra o exercício mais próximo do centro (via getBoundingClientRect)
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
       const scrollRect = scroll.getBoundingClientRect();
-      const scrollCenter = scrollRect.top + scrollRect.height / 2;
-      let best = w2.focusedIdx, bestDist = Infinity;
-      state.exercises.forEach((ex, idx) => {
-        if (isConjugatedPartB(idx)) return;
+      const focusLine = scrollRect.top + 100;
+      const visible = visibleExerciseIndices();
+      let best = w2.focusedIdx;
+      for (const idx of visible) {
         const el = document.getElementById('w2-ex-' + idx);
-        if (!el) return;
+        if (!el) continue;
         const r = el.getBoundingClientRect();
-        const dist = Math.abs((r.top + r.height / 2) - scrollCenter);
-        if (dist < bestDist) { bestDist = dist; best = idx; }
-      });
-      if (best !== w2.focusedIdx) {
-        // Snap suave para o centro do escolhido, com re-render anti-jump
-        focusAndSnap(best, true);
+        if (r.top <= focusLine && r.bottom > focusLine) {
+          best = idx;
+          break;
+        }
       }
-    }, 140); // debounce do usuário parar de rolar
+      if (best !== w2.focusedIdx) {
+        w2.focusedIdx = best;
+        renderAllV2();
+        updateNavButtons();
+      }
+    });
   }, { passive: true });
 }
 
