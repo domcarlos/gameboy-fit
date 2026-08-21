@@ -4925,28 +4925,56 @@ function shareRunReport() {
   }
 }
 let wakeLock = null;
+let _wakeLockKeepAlive = null;
 
 async function requestWakeLock() {
-  if ('wakeLock' in navigator) {
-    try {
-      wakeLock = await navigator.wakeLock.request('screen');
-    } catch(e) {}
-  }
+  if (!('wakeLock' in navigator)) return;
+  try {
+    // Se já existe, libera antes
+    if (wakeLock) {
+      try { await wakeLock.release(); } catch(e) {}
+      wakeLock = null;
+    }
+    wakeLock = await navigator.wakeLock.request('screen');
+    // Se o wake lock for liberado (iOS libera ao voltar do background),
+    // tenta reativar automaticamente enquanto ainda estamos numa tela de treino
+    wakeLock.addEventListener('release', () => {
+      wakeLock = null;
+      if (isWorkoutScreenActive()) {
+        setTimeout(() => requestWakeLock(), 500);
+      }
+    });
+  } catch(e) {}
 }
 
 function releaseWakeLock() {
+  clearInterval(_wakeLockKeepAlive);
+  _wakeLockKeepAlive = null;
   if (wakeLock) {
     wakeLock.release().catch(() => {});
     wakeLock = null;
   }
 }
 
+function isWorkoutScreenActive() {
+  const s = state.currentScreen;
+  return s === 'workout' || s === 'workout-v2' || s === 'run';
+}
+
 // Reativa wake lock se o app voltar ao foco (iOS libera ao minimizar)
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && state.currentScreen === 'workout') {
+  if (document.visibilityState === 'visible' && isWorkoutScreenActive()) {
     requestWakeLock();
   }
 });
+
+// Keep-alive extra: a cada 30s revalida se ainda estamos numa tela de treino
+// (garante que se o wake lock sumir por qualquer motivo, seja recriado)
+setInterval(() => {
+  if (isWorkoutScreenActive() && !wakeLock) {
+    requestWakeLock();
+  }
+}, 30000);
 </script>
 
 <!-- ======================================================
