@@ -1447,33 +1447,32 @@ body {
 .w2-prog-track { flex: 1; height: 4px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; }
 .w2-prog-fill { height: 100%; background: linear-gradient(90deg, #00FFC2, #00a582); border-radius: 2px; transition: width .4s; }
 
-/* Área de scroll com snap */
+/* Área de scroll com snap programático controlado (sem snap CSS pra não brigar) */
 .w2-scroll {
   flex: 1;
   overflow-y: auto;
-  scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   padding: 0 16px;
-  scroll-padding-top: 8px;
+  overscroll-behavior: contain;
+  scroll-behavior: auto;
 }
 .w2-scroll::-webkit-scrollbar { display: none; }
 /* Espaçador para permitir o primeiro/último item centralizar */
-.w2-spacer { height: 30vh; flex-shrink: 0; scroll-snap-align: none; }
+.w2-spacer { height: 30vh; flex-shrink: 0; }
 @media (min-width: 500px) { .w2-spacer { height: 280px; } }
 
 /* Bloco de exercício */
 .w2-ex {
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
   margin-bottom: 14px;
   border-radius: 18px;
   border: 1.5px solid rgba(255,255,255,.06);
   background: rgba(255,255,255,.015);
   overflow: hidden;
-  transition: border-color .35s, background .35s, opacity .35s, transform .35s;
+  transition: border-color .3s, background .3s, opacity .3s, transform .3s;
   opacity: .45;
   transform: scale(.97);
+  transform-origin: center center;
 }
 /* Colapsado (não central) */
 .w2-ex.collapsed { cursor: default; }
@@ -2825,7 +2824,8 @@ function startWorkoutV2() {
   requestAnimationFrame(() => requestAnimationFrame(() => {
     buildWorkoutV2();
     startGlobalTimerV2();
-    setTimeout(() => snapToExercise(w2.focusedIdx, false), 60);
+    // Centraliza primeiro exercício sem animação
+    requestAnimationFrame(() => snapToExercise(w2.focusedIdx, false));
     initSnapObserver();
   }));
 }
@@ -3252,16 +3252,12 @@ function advanceAfterExercise(exIdx) {
     const anyPending = state.exercises.findIndex((e,i) => e.status !== 'done' && !isConjugatedPartB(i));
     if (anyPending !== -1) {
       state.exercises[anyPending].status = 'active';
-      w2.focusedIdx = anyPending;
-      renderAllV2();
-      setTimeout(() => snapToExercise(anyPending, true), 200);
+      focusAndSnap(anyPending, true);
     }
     return;
   }
   state.exercises[nextIdx].status = 'active';
-  w2.focusedIdx = nextIdx;
-  renderAllV2();
-  setTimeout(() => snapToExercise(nextIdx, true), 250);
+  focusAndSnap(nextIdx, true);
 }
 
 function renderAllV2() {
@@ -3294,32 +3290,87 @@ function snapToExercise(idx, smooth) {
   const el = document.getElementById('w2-ex-' + idx);
   const scroll = document.getElementById('w2-scroll');
   if (!el || !scroll) return;
-  const target = el.offsetTop - (scroll.clientHeight / 2) + (el.clientHeight / 2);
+  // Usa getBoundingClientRect: mais confiável que offsetTop quando há transforms/scales
+  const scrollRect = scroll.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  // Distância do centro do elemento ao centro da viewport de scroll
+  const delta = (elRect.top + elRect.height / 2) - (scrollRect.top + scrollRect.height / 2);
+  const target = scroll.scrollTop + delta;
+  // Marca que o scroll é programático (para o listener não brigar)
+  w2._programmaticScroll = true;
   scroll.scrollTo({ top: target, behavior: smooth ? 'smooth' : 'auto' });
+  clearTimeout(w2._progScrollClear);
+  w2._progScrollClear = setTimeout(() => { w2._programmaticScroll = false; }, smooth ? 500 : 100);
+}
+
+// Muda foco e faz snap com render em duas fases para evitar medição em layout instável
+function focusAndSnap(idx, smooth) {
+  if (isConjugatedPartB(idx)) {
+    const p = getConjugatedPartner(idx);
+    if (p) idx = p.idx;
+  }
+  const scroll = document.getElementById('w2-scroll');
+  if (!scroll) return;
+  // 1. Guarda posição do topo do elemento ANTES do re-render (compensação anti-jump)
+  const oldEl = document.getElementById('w2-ex-' + idx);
+  const oldRect = oldEl ? oldEl.getBoundingClientRect() : null;
+  const scrollRect = scroll.getBoundingClientRect();
+  const oldOffset = oldRect ? (oldRect.top - scrollRect.top) : null;
+
+  w2.focusedIdx = idx;
+  renderAllV2();
+
+  // 2. Após render, mede a nova posição e ajusta o scroll suavemente
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const newEl = document.getElementById('w2-ex-' + idx);
+    if (!newEl) return;
+    // Se sabemos onde o item estava, primeiro ajusta o scroll para manter ele no mesmo lugar visual
+    // (evita o "salto" que o usuário sente), depois centraliza suavemente
+    if (oldOffset !== null && !smooth) {
+      const newRect = newEl.getBoundingClientRect();
+      const newOffset = newRect.top - scrollRect.top;
+      const diff = newOffset - oldOffset;
+      if (Math.abs(diff) > 1) {
+        // Ajuste instantâneo para manter posição visual
+        w2._programmaticScroll = true;
+        scroll.scrollTop += diff;
+      }
+    }
+    // Agora centraliza suavemente
+    snapToExercise(idx, true);
+  }));
 }
 
 function initSnapObserver() {
   const scroll = document.getElementById('w2-scroll');
   if (!scroll) return;
+
+  let scrollIdleTimer;
   scroll.addEventListener('scroll', () => {
+    // Ignora scroll programático (o snapToExercise dispara scroll também)
+    if (w2._programmaticScroll) return;
+    // Não muda foco durante execução ou descanso
     if (w2.runningSet || w2.resting) return;
-    clearTimeout(w2._snapTimer);
-    w2._snapTimer = setTimeout(() => {
-      const center = scroll.scrollTop + scroll.clientHeight / 2;
-      let best = 0, bestDist = Infinity;
+
+    clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = setTimeout(() => {
+      // Encontra o exercício mais próximo do centro (via getBoundingClientRect)
+      const scrollRect = scroll.getBoundingClientRect();
+      const scrollCenter = scrollRect.top + scrollRect.height / 2;
+      let best = w2.focusedIdx, bestDist = Infinity;
       state.exercises.forEach((ex, idx) => {
         if (isConjugatedPartB(idx)) return;
         const el = document.getElementById('w2-ex-' + idx);
         if (!el) return;
-        const elCenter = el.offsetTop + el.clientHeight / 2;
-        const dist = Math.abs(elCenter - center);
+        const r = el.getBoundingClientRect();
+        const dist = Math.abs((r.top + r.height / 2) - scrollCenter);
         if (dist < bestDist) { bestDist = dist; best = idx; }
       });
       if (best !== w2.focusedIdx) {
-        w2.focusedIdx = best;
-        renderAllV2();
+        // Snap suave para o centro do escolhido, com re-render anti-jump
+        focusAndSnap(best, true);
       }
-    }, 120);
+    }, 140); // debounce do usuário parar de rolar
   }, { passive: true });
 }
 
