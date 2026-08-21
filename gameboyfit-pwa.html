@@ -1701,7 +1701,7 @@ body {
     </div>
     <div class="carts-row">
 
-      <!-- Cartucho Elite Futebol — estilo EA FC -->
+      <!-- Cartucho Musculação Futebol — estilo EA FC -->
       <div class="cart-card" data-cart-id="elite-futebol" onclick="focusCartridge('elite-futebol')">
         <div class="cart-bg"></div>
         <div class="cart-texture"></div>
@@ -1717,7 +1717,7 @@ body {
         <!-- Painel inferior -->
         <div class="cart-bottom-panel">
           <div class="cart-name-row">
-            <div class="cart-name">ELITE FUTEBOL</div>
+            <div class="cart-name">MUSCULAÇÃO FUTEBOL</div>
             <div class="cart-edition-badge">#001</div>
           </div>
           <div class="cart-divider-gold"></div>
@@ -1844,7 +1844,7 @@ body {
     margin: 10px 20px 6px;
     text-transform:uppercase;
     transition:color .3s;
-  ">— ELITE FUTEBOL —</div>
+  ">— MUSCULAÇÃO FUTEBOL —</div>
 
   <!-- Stats dinâmicos por cartucho em destaque -->
   <div class="home-stats">
@@ -1895,12 +1895,12 @@ body {
 <div class="screen" id="screen-programs">
   <div class="topbar">
     <div class="back-btn" onclick="goTo('home')">‹</div>
-    <div class="topbar-title" id="prog-cart-label">ELITE FUTEBOL</div>
+    <div class="topbar-title" id="prog-cart-label">MUSCULAÇÃO FUTEBOL</div>
     <div class="spacer"></div>
   </div>
 
   <div class="prog-hero">
-    <div class="prog-super" id="prog-super">ELITE FUTEBOL</div>
+    <div class="prog-super" id="prog-super">MUSCULAÇÃO FUTEBOL</div>
     <div class="prog-title">Futebol de Elite</div>
     <div class="prog-sub">Paulo Paulada · 3x por semana · 8 semanas</div>
   </div>
@@ -2363,33 +2363,35 @@ const state = {
   conjugatedPending: false, // true quando acabou a parte A do conjugado, aguarda parte B
   allPrograms: {
     'A': [
-      { name:'HIP THRUST BARRA', desc:'GLÚTEO MÁXIMO · POSTERIOR · CORE', sets:4, reps:8, rest:90, load:60, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'hip_thrust_barra'},
-      { name:'STIFF / RDL BARRA', desc:'POSTERIOR DE COXA · GLÚTEO', sets:3, reps:8, rest:90, load:45, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'stiff_rdl_barra'},
-      { name:'NORDIC CURL', desc:'ISQUIOTIBIAL · PREVENÇÃO DE LESÃO', sets:3, reps:6, rest:120, load:0, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'nordic_curl'},
-      { name:'AFUNDO UNILATERAL', desc:'GLÚTEO · QUADRÍCEPS · EQUILÍBRIO', sets:3, reps:8, rest:75, load:36, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'afundo_unilateral'},
-      { name:'MESA FLEXORA', desc:'POSTERIOR DE COXA · ISOLADO', sets:3, reps:10, rest:75, load:30, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'mesa_flexora'},
-      { name:'PUXADA ALTA POLIA', desc:'COSTAS · BÍCEPS', sets:4, reps:8, rest:90, load:65, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'puxada_alta_polia'},
+      { name:'CADEIRA ABDUTORA', desc:'ABDUTORES · GLÚTEO MÉDIO · ESTABILIZADORES', sets:3, reps:15, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:null },
+      { name:'CADEIRA ADUTORA', desc:'ADUTORES · VIRILHA · ESTABILIZADORES', sets:3, reps:15, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:null },
+      { name:'HIP THRUST BARRA', desc:'GLÚTEO MÁXIMO · POSTERIOR · CORE', sets:4, reps:8, rest:120, load:120, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'hip_thrust_barra'},
+      { name:'STIFF / RDL BARRA', desc:'POSTERIOR DE COXA · GLÚTEO', sets:3, reps:8, rest:120, load:45, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'stiff_rdl_barra'},
+      { name:'BULGARIAN SPLIT SQUAT', desc:'GLÚTEO · QUADRÍCEPS · EQUILÍBRIO · MÁQUINA COM HALTERES · 8 REPS CADA PERNA', sets:3, reps:8, rest:120, load:15, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:null },
+      { name:'MESA FLEXORA UNILATERAL', desc:'POSTERIOR DE COXA · ISOLADO · 10 REPS CADA PERNA', sets:3, reps:10, rest:75, load:30, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'mesa_flexora'},
+      { name:'NORDIC CURL', desc:'ISQUIOTIBIAL · EXCÊNTRICO 4s · PREVENÇÃO DE LESÃO', sets:3, reps:6, rest:75, load:0, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'nordic_curl'},
+      { name:'PUXADA ALTA POLIA', desc:'COSTAS · BÍCEPS · PEGADA ABERTA', sets:4, reps:8, rest:90, load:65, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'puxada_alta_polia'},
       { name:'REMADA CURVADA', desc:'COSTAS · TRAPÉZIO · ROMBÓIDE', sets:3, reps:8, rest:90, load:40, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'remada_curvada'},
-      { name:'FLY INVERTIDO MÁQUINA', desc:'DELTÓIDE POSTERIOR · SAÚDE ESCAPULAR', sets:3, reps:12, rest:60, load:50, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'fly_invertido'},
-      { name:'PALLOF PRESS', desc:'CORE · ANTI-ROTAÇÃO · PROTEÇÃO LOMBAR', sets:3, reps:12, rest:60, load:0, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'pallof_press'},
+      { name:'FLY INVERTIDO MÁQUINA', desc:'DELTÓIDE POSTERIOR · SAÚDE ESCAPULAR', sets:3, reps:12, rest:75, load:50, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'fly_invertido'},
+      { name:'PALLOF PRESS', desc:'CORE · ANTI-ROTAÇÃO · PROTEÇÃO LOMBAR · 12 REPS CADA LADO', sets:3, reps:12, rest:60, load:0, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'pallof_press'},
       { name:'OBLÍQUO UNILATERAL', desc:'OBLÍQUO INTERNO E EXTERNO · CRUNCH LATERAL · 20 REPS CADA LADO', sets:3, reps:20, rest:0, load:0, lastLoad:'última: —', isFoco:false, conjugated:'INFRA BOSU', imageKey:'obliquo_cruzado'},
       { name:'INFRA BOSU', desc:'INFRAESPINAL · CORE INFERIOR', sets:3, reps:20, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:'OBLÍQUO UNILATERAL', imageKey:'infra_bosu'},
     ],
     'B': [
-      { name:'AGACHAMENTO (SMITH/LIVRE)', desc:'QUADRÍCEPS · POTÊNCIA DE ARRANQUE', sets:4, reps:6, rest:120, load:50, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'agachamento_smith'},
-      { name:'LEG PRESS 45°', desc:'QUADRÍCEPS · GLÚTEO · SEM DESCANSO → GÊMEOS', sets:3, reps:8, rest:0, load:240, lastLoad:'última: —', isFoco:false, conjugated:'GÊMEOS NO LEG PRESS', imageKey:'leg_press_45'},
-      { name:'GÊMEOS NO LEG PRESS', desc:'PANTURRILHA · AMPLITUDE COMPLETA', sets:3, reps:15, rest:90, load:150, lastLoad:'última: —', isFoco:false, conjugated:'LEG PRESS 45°', imageKey:'gemeos_leg'},
-      { name:'CADEIRA EXTENSORA UNILATERAL', desc:'QUADRÍCEPS · ISOLADO', sets:3, reps:10, rest:75, load:50, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'cadeira_extensora'},
-      { name:'SUPINO RETO LIVRE', desc:'PEITORAL · FORÇA BASE', sets:4, reps:6, rest:120, load:45, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'supino_reto'},
-      { name:'SUPINO INCLINADO HALTERES', desc:'PEITORAL SUPERIOR · OMBRO ANTERIOR', sets:3, reps:8, rest:90, load:20, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'supino_inclinado'},
-      { name:'DESENVOLVIMENTO MILITAR HALTERES', desc:'DELTÓIDE · OMBROS', sets:3, reps:8, rest:90, load:16, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'desenvolvimento_militar'},
-      { name:'ROTAÇÃO EXTERNA POLIA', desc:'MANGUITO ROTADOR · INFRAESPINHAL · PREVENÇÃO', sets:3, reps:12, rest:0, load:5, lastLoad:'última: —', isFoco:true, conjugated:'ROTAÇÃO INTERNA POLIA', imageKey:'rotacao_polia'},
-      { name:'ROTAÇÃO INTERNA POLIA', desc:'MANGUITO ROTADOR · SUBESCAPULAR · PREVENÇÃO', sets:3, reps:12, rest:60, load:5, lastLoad:'última: —', isFoco:false, conjugated:'ROTAÇÃO EXTERNA POLIA', imageKey:'rotacao_interna_polia'},
-      { name:'ROSCA DIRETA BARRA', desc:'BÍCEPS · FORÇA', sets:3, reps:8, rest:75, load:27.5, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'rosca_direta'},
-      { name:'ROSCA MARTELO HALTERE', desc:'BÍCEPS · BRAQUIAL', sets:3, reps:10, rest:75, load:14, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'rosca_martelo'},
-      { name:'TRÍCEPS TESTA BARRA', desc:'TRÍCEPS · FORÇA', sets:3, reps:8, rest:75, load:27.5, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'triceps_testa'},
-      { name:'PRANCHA ISOMÉTRICA', desc:'CORE · TRANSVERSO · GLÚTEOS · ISOMÉTRICO', sets:3, reps:1, rest:0, load:0, lastLoad:'última: —', isFoco:false, conjugated:'ABDOMINAL SUPRA', imageKey:'prancha_isometrica', isTime:true, timeSeconds:45 },
-      { name:'ABDOMINAL SUPRA', desc:'RETO ABDOMINAL · CRUNCH CLÁSSICO', sets:3, reps:20, rest:60, load:0, lastLoad:'última: —', isFoco:false, conjugated:'PRANCHA ISOMÉTRICA', imageKey:'abdominal_supra'},
+      { name:'AGACHAMENTO SMITH', desc:'QUADRÍCEPS · POTÊNCIA DE ARRANQUE', sets:4, reps:6, rest:120, load:100, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'agachamento_smith'},
+      { name:'LEG PRESS 45°', desc:'QUADRÍCEPS · GLÚTEO · CONJUGADO COM GÊMEOS', sets:3, reps:10, rest:0, load:280, lastLoad:'última: —', isFoco:false, conjugated:'GÊMEOS NO LEG PRESS', imageKey:'leg_press_45'},
+      { name:'GÊMEOS NO LEG PRESS', desc:'PANTURRILHA · AMPLITUDE COMPLETA', sets:3, reps:15, rest:120, load:150, lastLoad:'última: —', isFoco:false, conjugated:'LEG PRESS 45°', imageKey:'gemeos_leg'},
+      { name:'CADEIRA EXTENSORA UNILATERAL', desc:'QUADRÍCEPS · ISOLADO · 10 REPS CADA PERNA', sets:3, reps:10, rest:90, load:50, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'cadeira_extensora'},
+      { name:'SUPINO RETO BARRA', desc:'PEITORAL · FORÇA BASE · BARRA LIVRE', sets:4, reps:7, rest:90, load:60, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'supino_reto'},
+      { name:'SUPINO INCLINADO HALTERES', desc:'PEITORAL SUPERIOR · OMBRO ANTERIOR · 20-24kg CADA', sets:3, reps:8, rest:90, load:20, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'supino_inclinado'},
+      { name:'DESENVOLVIMENTO MILITAR HALTERES', desc:'DELTÓIDE · OMBROS · 16-20kg CADA', sets:3, reps:8, rest:90, load:16, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'desenvolvimento_militar'},
+      { name:'ROTAÇÃO INTERNA POLIA', desc:'MANGUITO ROTADOR · SUBESCAPULAR · SUPERSET INTERNO', sets:3, reps:12, rest:0, load:5, lastLoad:'última: —', isFoco:true, conjugated:'ROTAÇÃO EXTERNA POLIA', imageKey:'rotacao_interna_polia'},
+      { name:'ROTAÇÃO EXTERNA POLIA', desc:'MANGUITO ROTADOR · INFRAESPINHAL · PREVENÇÃO', sets:3, reps:12, rest:60, load:5, lastLoad:'última: —', isFoco:false, conjugated:'ROTAÇÃO INTERNA POLIA', imageKey:'rotacao_polia'},
+      { name:'ROSCA DIRETA BARRA', desc:'BÍCEPS · FORÇA · BARRA RETA', sets:3, reps:9, rest:60, load:27.5, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'rosca_direta'},
+      { name:'ROSCA MARTELO HALTERE', desc:'BÍCEPS · BRAQUIAL · 14-16kg', sets:3, reps:10, rest:60, load:14, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'rosca_martelo'},
+      { name:'TRÍCEPS TESTA BARRA', desc:'TRÍCEPS · FORÇA', sets:3, reps:8, rest:60, load:27.5, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'triceps_testa'},
+      { name:'PRANCHA FRONTAL', desc:'CORE · TRANSVERSO · GLÚTEOS · ISOMÉTRICO · CONJUGADO', sets:3, reps:1, rest:0, load:0, lastLoad:'última: —', isFoco:false, conjugated:'ABDOMINAL SUPRA', imageKey:'prancha_isometrica', isTime:true, timeSeconds:45 },
+      { name:'ABDOMINAL SUPRA', desc:'RETO ABDOMINAL · CRUNCH CLÁSSICO', sets:3, reps:20, rest:45, load:0, lastLoad:'última: —', isFoco:false, conjugated:'PRANCHA FRONTAL', imageKey:'abdominal_supra'},
     ]
   },
 };
@@ -3813,7 +3815,7 @@ function finishWorkout() {
     dateMs: Date.now(),
     program: state.program ? state.program.label : 'A',
     programTitle: state.program ? state.program.title : 'Treino',
-    cartridge: state.cartridge ? state.cartridge.name : 'ELITE FUTEBOL',
+    cartridge: state.cartridge ? state.cartridge.name : 'MUSCULAÇÃO FUTEBOL',
     cartridgeId: state.cartridge ? state.cartridge.id : 'elite-futebol',
     duration: state.totalSec,
     sets: state.completedSets,
@@ -4109,7 +4111,7 @@ const CART_CONFIG = {
     ctaColor: '#FFD700',
     selectedClass: 'selected-gold',
     labelColor: 'rgba(255,215,0,.6)',
-    openFn: () => selectCartridge('elite-futebol','ELITE FUTEBOL','Carlos Henrique',2,8),
+    openFn: () => selectCartridge('elite-futebol','MUSCULAÇÃO FUTEBOL','Carlos Henrique',2,8),
   },
   'corrida-futebol': {
     accentColor: '#38a5ff',
@@ -4172,7 +4174,7 @@ function applyCartFocusUI(cartId) {
   // Label
   const label = document.getElementById('hs-cart-label');
   if (label) {
-    const names = { 'elite-futebol': 'ELITE FUTEBOL', 'corrida-futebol': 'CORRIDA FUTEBOL' };
+    const names = { 'elite-futebol': 'MUSCULAÇÃO FUTEBOL', 'corrida-futebol': 'CORRIDA FUTEBOL' };
     label.textContent = '— ' + (names[cartId] || cartId.replace(/-/g,' ').toUpperCase()) + ' —';
     label.style.color = cfg.labelColor;
   }
