@@ -3062,7 +3062,7 @@ function renderSerieRow(exIdx, setNum) {
           <div class="w2-rest-lbl">DESCANSO</div>
           <div class="w2-rest-timer" id="w2-rest-timer">${w2.resting.duration || ex.rest}</div>
         </div>
-        <div class="w2-rest-skip" onclick="skipRestV2()">PULAR →</div>
+        <div class="w2-rest-skip" onclick="event.stopPropagation();skipRestV2()">PULAR →</div>
       </div>`;
   }
 
@@ -3079,9 +3079,9 @@ function renderSerieRow(exIdx, setNum) {
       loadCtrl = `<div class="w2-serie-load"><div class="w2-load-val">${load > 0 ? load : '—'}<small>${load>0?'kg':''}</small></div></div>`;
     } else if (isActive || isRunning) {
       loadCtrl = `<div class="w2-serie-load">
-        <div class="w2-load-btn" onclick="adjustSetLoad(${exIdx},${setNum},-1)">−</div>
+        <div class="w2-load-btn" onclick="event.stopPropagation();adjustSetLoad(${exIdx},${setNum},-1)">−</div>
         <div class="w2-load-val">${load}<small>kg</small></div>
-        <div class="w2-load-btn" onclick="adjustSetLoad(${exIdx},${setNum},1)">+</div>
+        <div class="w2-load-btn" onclick="event.stopPropagation();adjustSetLoad(${exIdx},${setNum},1)">+</div>
       </div>`;
     } else {
       loadCtrl = `<div class="w2-serie-load"><div class="w2-load-val" style="opacity:.4">${load > 0 ? load : '—'}<small>${load>0?'kg':''}</small></div></div>`;
@@ -3094,9 +3094,9 @@ function renderSerieRow(exIdx, setNum) {
     action = `<div class="w2-serie-action done-check">✓</div>`;
   } else if (isRunning) {
     action = `<div class="w2-serie-timer" id="w2-set-timer">00:00</div>
-      <button class="w2-serie-action finish" onclick="finishSetV2()">OK</button>`;
+      <button class="w2-serie-action finish" onclick="event.stopPropagation();finishSetV2()">OK</button>`;
   } else if (isActive) {
-    action = `<button class="w2-serie-action play" onclick="startSetV2(${exIdx},${setNum})">▶ INICIAR</button>`;
+    action = `<button class="w2-serie-action play" onclick="event.stopPropagation();startSetV2(${exIdx},${setNum})">▶ INICIAR</button>`;
   } else {
     action = `<div class="w2-serie-action locked">—</div>`;
   }
@@ -3149,63 +3149,72 @@ function startSetV2(exIdx, setNum) {
 
 function finishSetV2() {
   if (!w2.runningSet) return;
-  clearInterval(w2.setInterval);
-  const { exIdx, setNum } = w2.runningSet;
-  const ex = state.exercises[exIdx];
+  try {
+    clearInterval(w2.setInterval);
+    const { exIdx, setNum } = w2.runningSet;
+    const ex = state.exercises[exIdx];
+    if (!ex) { w2.runningSet = null; return; }
 
-  // Marca série como feita
-  ex.completedSeries = Math.max(ex.completedSeries, setNum);
-  ex.usedLoad = ex.setLoads[setNum-1] || ex.usedLoad || 0;
-  state.completedSets++;
-  w2.runningSet = null;
+    // Marca série como feita
+    ex.completedSeries = Math.max(ex.completedSeries, setNum);
+    ex.usedLoad = (ex.setLoads && ex.setLoads[setNum-1]) || ex.usedLoad || 0;
+    state.completedSets++;
+    w2.runningSet = null;
 
-  // Conjugado?
-  if (ex.conjugated) {
-    const partner = getConjugatedPartner(exIdx);
-    if (partner) {
-      const aIdx = exIdx < partner.idx ? exIdx : partner.idx;
-      const bIdx = exIdx < partner.idx ? partner.idx : exIdx;
-      const aEx = state.exercises[aIdx];
-      const bEx = state.exercises[bIdx];
-      const isA = exIdx === aIdx;
+    // Conjugado?
+    if (ex.conjugated) {
+      const partner = getConjugatedPartner(exIdx);
+      if (partner) {
+        const aIdx = exIdx < partner.idx ? exIdx : partner.idx;
+        const bIdx = exIdx < partner.idx ? partner.idx : exIdx;
+        const aEx = state.exercises[aIdx];
+        const bEx = state.exercises[bIdx];
+        const isA = exIdx === aIdx;
+        const cardIdx = aIdx;
 
-      // Card sempre fica no A (o "container" do par)
-      const cardIdx = aIdx;
-
-      if (isA) {
-        // Acabou A → próxima é B da mesma série, sem descanso
-        renderExerciseV2(cardIdx);
-        updateProgressV2();
-        return;
-      } else {
-        // Acabou B → par de séries completo
-        const pairSeries = Math.min(aEx.completedSeries, bEx.completedSeries);
-        if (pairSeries >= aEx.sets) {
-          // Terminou todas as séries do conjugado
-          aEx.status = 'done';
-          bEx.status = 'done';
+        if (isA) {
           renderExerciseV2(cardIdx);
           updateProgressV2();
-          advanceAfterExercise(cardIdx);
+          return;
         } else {
-          // Descanso e volta para série (pairSeries+1) de A
-          const restSecs = Math.max(aEx.rest || 0, bEx.rest || 0, 60);
-          startRestV2(bIdx, setNum, restSecs, aIdx, pairSeries + 1);
+          const pairSeries = Math.min(aEx.completedSeries, bEx.completedSeries);
+          if (pairSeries >= aEx.sets) {
+            aEx.status = 'done';
+            bEx.status = 'done';
+            renderExerciseV2(cardIdx);
+            updateProgressV2();
+            advanceAfterExercise(cardIdx);
+          } else {
+            const restSecs = Math.max(aEx.rest || 0, bEx.rest || 0, 60);
+            startRestV2(bIdx, setNum, restSecs, aIdx, pairSeries + 1);
+          }
         }
+        return;
       }
-      return;
     }
-  }
 
-  // Exercício normal
-  const isLastSet = ex.completedSeries >= ex.sets;
-  if (isLastSet) {
-    ex.status = 'done';
-    renderExerciseV2(exIdx);
-    updateProgressV2();
-    advanceAfterExercise(exIdx);
-  } else {
-    startRestV2(exIdx, setNum, ex.rest || 90, exIdx, setNum + 1);
+    // Exercício normal
+    const isLastSet = ex.completedSeries >= ex.sets;
+    if (isLastSet) {
+      ex.status = 'done';
+      renderExerciseV2(exIdx);
+      updateProgressV2();
+      advanceAfterExercise(exIdx);
+    } else {
+      startRestV2(exIdx, setNum, ex.rest || 90, exIdx, setNum + 1);
+    }
+  } catch(e) {
+    // Fallback: se algo deu errado, garantir que ao menos o estado esteja consistente
+    console.error('finishSetV2 error:', e);
+    // Verificação de sanidade: se o exercício deveria ter avançado, força
+    try {
+      const idx = w2.focusedIdx;
+      const ex = state.exercises[idx];
+      if (ex && ex.completedSeries >= ex.sets && ex.status !== 'done' && !ex.conjugated) {
+        ex.status = 'done';
+        advanceAfterExercise(idx);
+      }
+    } catch(e2) {}
   }
 }
 
