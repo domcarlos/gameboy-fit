@@ -2862,6 +2862,12 @@ function buildWorkoutV2() {
 }
 
 function renderExerciseV2(idx) {
+  // Se este exercício é parte B de conjugado, redireciona para renderizar o card do A
+  if (isConjugatedPartB(idx)) {
+    const partner = getConjugatedPartner(idx);
+    if (partner) return renderExerciseV2(partner.idx);
+    return;
+  }
   const ex = state.exercises[idx];
   const el = document.getElementById('w2-ex-' + idx);
   if (!ex || !el) return;
@@ -3122,7 +3128,10 @@ function startSetV2(exIdx, setNum) {
   w2._setPausedAccum = 0;
   w2._setPauseStart = 0;
 
-  renderExerciseV2(exIdx);
+  // Se este exercício é parte B de conjugado, o card é o do A
+  const partner = getConjugatedPartner(exIdx);
+  const cardIdx = (partner && partner.idx < exIdx) ? partner.idx : exIdx;
+  renderExerciseV2(cardIdx);
 
   clearInterval(w2.setInterval);
   w2.setInterval = setInterval(() => {
