@@ -1417,6 +1417,221 @@ body {
   cursor: pointer;
   margin-bottom: 4px;
 }
+/* ============================================================
+   WORKOUT V2 — scroll-snap, exercício central em destaque
+   ============================================================ */
+#screen-workout-v2 { display: none; flex-direction: column; height: 100vh; background: #07090c; }
+#screen-workout-v2.active { display: flex; }
+@media (min-width: 500px) { #screen-workout-v2 { height: 960px; } }
+
+.w2-topbar {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 10px;
+}
+.w2-close, .w2-pause {
+  width: 44px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  cursor: pointer; font-size: 16px; color: rgba(255,255,255,.7);
+}
+.w2-pause { width: auto; padding: 0 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 1px; }
+.w2-pause::after { content: 'PAUSAR'; }
+.w2-pause.paused::after { content: 'CONTINUAR'; color: #00FFC2; }
+.w2-timer-block { text-align: center; }
+.w2-timer { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 26px; color: #00FFC2; letter-spacing: 1px; text-shadow: 0 0 12px rgba(0,255,194,.4); line-height: 1; }
+.w2-timer-lbl { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 2px; color: rgba(255,255,255,.35); margin-top: 3px; }
+
+.w2-progress { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 0 16px 12px; }
+.w2-prog-txt { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(0,255,194,.7); min-width: 34px; }
+.w2-prog-track { flex: 1; height: 4px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; }
+.w2-prog-fill { height: 100%; background: linear-gradient(90deg, #00FFC2, #00a582); border-radius: 2px; transition: width .4s; }
+
+/* Área de scroll com snap */
+.w2-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 16px;
+  scroll-padding-top: 8px;
+}
+.w2-scroll::-webkit-scrollbar { display: none; }
+/* Espaçador para permitir o primeiro/último item centralizar */
+.w2-spacer { height: 30vh; flex-shrink: 0; scroll-snap-align: none; }
+@media (min-width: 500px) { .w2-spacer { height: 280px; } }
+
+/* Bloco de exercício */
+.w2-ex {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.015);
+  overflow: hidden;
+  transition: border-color .35s, background .35s, opacity .35s, transform .35s;
+  opacity: .45;
+  transform: scale(.97);
+}
+/* Colapsado (não central) */
+.w2-ex.collapsed { cursor: default; }
+.w2-ex.collapsed .w2-ex-body { display: none; }
+.w2-ex.collapsed .w2-ex-head { padding: 16px; }
+
+/* Central em destaque */
+.w2-ex.focused {
+  opacity: 1;
+  transform: scale(1);
+  border-color: rgba(0,255,194,.3);
+  background: linear-gradient(160deg, rgba(0,255,194,.05), rgba(0,255,194,.01));
+  box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 0 40px rgba(0,255,194,.06);
+}
+.w2-ex.done { border-color: rgba(0,255,194,.15); }
+.w2-ex.done.collapsed { opacity: .5; }
+
+/* Cabeçalho do exercício */
+.w2-ex-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 16px 12px;
+}
+.w2-ex-num {
+  font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 15px;
+  color: rgba(255,255,255,.3); flex-shrink: 0; min-width: 26px;
+}
+.w2-ex.focused .w2-ex-num { color: #00FFC2; }
+.w2-ex.done .w2-ex-num { color: rgba(0,255,194,.5); }
+.w2-ex-thumb {
+  width: 46px; height: 46px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, #0a1410, #050907);
+  border: 1px solid rgba(0,255,194,.12); overflow: hidden; position: relative;
+}
+.w2-ex-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .4s; }
+.w2-ex-headinfo { flex: 1; min-width: 0; }
+.w2-ex-name { font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w2-ex.collapsed:not(.done) .w2-ex-name { color: rgba(255,255,255,.7); }
+.w2-ex-sub { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,.4); margin-top: 3px; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w2-ex-badge {
+  flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  padding: 3px 8px; border-radius: 5px; letter-spacing: .5px;
+}
+.w2-ex-badge.foco { background: rgba(255,184,0,.1); border: 1px solid rgba(255,184,0,.3); color: #FFB800; }
+.w2-ex-badge.conj { background: rgba(0,255,194,.08); border: 1px solid rgba(0,255,194,.3); color: #00FFC2; }
+.w2-ex-badge.check { color: #00FFC2; font-size: 16px; padding: 0; }
+
+/* Corpo do exercício (só no focused) */
+.w2-ex-body { padding: 0 16px 16px; }
+
+/* Meta pills */
+.w2-meta { display: flex; gap: 8px; margin-bottom: 14px; }
+.w2-meta-item { flex: 1; background: rgba(255,255,255,.03); border-radius: 10px; padding: 8px 6px; text-align: center; }
+.w2-meta-lbl { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 1px; color: rgba(255,255,255,.4); }
+.w2-meta-val { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 16px; color: #fff; margin-top: 2px; }
+.w2-meta-val span { font-size: 10px; color: rgba(255,255,255,.4); }
+
+/* Linhas de série */
+.w2-series-title { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: rgba(255,255,255,.4); margin-bottom: 8px; }
+.w2-serie {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 6px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.05);
+  transition: all .25s;
+}
+.w2-serie.done { border-color: rgba(0,255,194,.25); background: rgba(0,255,194,.04); }
+.w2-serie.active { border-color: rgba(0,255,194,.4); background: rgba(0,255,194,.06); box-shadow: 0 0 20px rgba(0,255,194,.08); }
+.w2-serie.locked { opacity: .4; }
+.w2-serie.running { border-color: rgba(0,255,194,.6); background: rgba(0,255,194,.08); }
+.w2-serie.resting { border-color: rgba(56,165,255,.4); background: rgba(56,165,255,.06); }
+
+.w2-serie-num {
+  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 12px;
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.5);
+}
+.w2-serie.done .w2-serie-num { background: rgba(0,255,194,.15); color: #00FFC2; }
+.w2-serie.active .w2-serie-num, .w2-serie.running .w2-serie-num { background: rgba(0,255,194,.2); color: #00FFC2; }
+
+.w2-serie-info { flex: 1; min-width: 0; }
+.w2-serie-reps { font-size: 13px; font-weight: 600; color: #fff; }
+.w2-serie.locked .w2-serie-reps { color: rgba(255,255,255,.5); }
+.w2-serie-meta { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,.4); margin-top: 2px; }
+
+/* Controle de carga inline por série */
+.w2-serie-load { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.w2-load-btn {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: rgba(255,184,0,.1); border: 1px solid rgba(255,184,0,.3);
+  color: #FFB800; font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.w2-load-val {
+  min-width: 46px; text-align: center;
+  font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 15px; color: #FFB800;
+}
+.w2-load-val small { font-size: 9px; color: rgba(255,184,0,.6); }
+
+/* Botão de ação da série */
+.w2-serie-action {
+  flex-shrink: 0;
+  padding: 8px 14px; border-radius: 9px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  cursor: pointer; border: none; min-width: 68px; text-align: center;
+}
+.w2-serie-action.play { background: #00FFC2; color: #05100c; }
+.w2-serie-action.pause { background: rgba(255,184,0,.15); border: 1px solid rgba(255,184,0,.4); color: #FFB800; }
+.w2-serie-action.finish { background: rgba(0,255,194,.15); border: 1px solid rgba(0,255,194,.5); color: #00FFC2; }
+.w2-serie-action.done-check { background: transparent; color: #00FFC2; font-size: 16px; min-width: 40px; cursor: default; }
+.w2-serie-action.locked { background: rgba(255,255,255,.03); color: rgba(255,255,255,.25); cursor: default; }
+
+/* Timer inline da série ativa */
+.w2-serie-timer {
+  font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 15px;
+  color: #00FFC2; min-width: 56px; text-align: center; flex-shrink: 0;
+}
+.w2-serie-timer.rest { color: #38a5ff; }
+
+/* Descanso inline */
+.w2-rest-inline {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; margin-bottom: 6px;
+  border-radius: 12px;
+  background: rgba(56,165,255,.06); border: 1px solid rgba(56,165,255,.3);
+}
+.w2-rest-left { display: flex; align-items: center; gap: 10px; }
+.w2-rest-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: #38a5ff; }
+.w2-rest-timer { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 20px; color: #38a5ff; text-shadow: 0 0 12px rgba(56,165,255,.4); }
+.w2-rest-skip { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(56,165,255,.7); cursor: pointer; letter-spacing: 1px; }
+
+/* Conjugado - indicador */
+.w2-conj-tag { display: inline-flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #00FFC2; letter-spacing: 1px; margin-bottom: 8px; }
+
+/* Conjugado empilhado - sub-blocos A e B dentro do mesmo card */
+.w2-conj-part {
+  padding: 12px 0 8px;
+  border-top: 1px dashed rgba(0,255,194,.15);
+}
+.w2-conj-part:first-of-type { border-top: none; padding-top: 0; }
+.w2-conj-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.w2-conj-part-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; padding: 3px 7px; border-radius: 5px; flex-shrink: 0;
+}
+.w2-conj-part-tag.a { background: rgba(255,184,0,.15); color: #FFB800; border: 1px solid rgba(255,184,0,.4); }
+.w2-conj-part-tag.b { background: rgba(56,165,255,.15); color: #38a5ff; border: 1px solid rgba(56,165,255,.4); }
+.w2-conj-part-name {
+  font-size: 13px; font-weight: 700; color: #fff; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.w2-conj-part-thumb {
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  background: linear-gradient(135deg, #0a1410, #050907);
+  border: 1px solid rgba(0,255,194,.12); overflow: hidden; position: relative;
+}
+.w2-conj-part-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .4s; }
 </style>
 </head>
 <body>
@@ -1872,6 +2087,31 @@ body {
   <div class="wk-next" id="wk-next" style="display:none"></div>
 </div>
 
+<!-- ======================================================
+     SCREEN: WORKOUT V2 — scroll-snap
+     ====================================================== -->
+<div class="screen" id="screen-workout-v2">
+  <div class="w2-topbar">
+    <div class="w2-close" onclick="confirmExitV2()">✕</div>
+    <div class="w2-timer-block">
+      <div class="w2-timer" id="w2-total-timer">00:00</div>
+      <div class="w2-timer-lbl">TEMPO TOTAL</div>
+    </div>
+    <div class="w2-pause" id="w2-pause-btn" onclick="toggleGlobalPauseV2()"></div>
+  </div>
+
+  <div class="w2-progress">
+    <span class="w2-prog-txt" id="w2-prog-txt">1/10</span>
+    <div class="w2-prog-track"><div class="w2-prog-fill" id="w2-prog-fill" style="width:10%"></div></div>
+  </div>
+
+  <div class="w2-scroll" id="w2-scroll">
+    <div class="w2-spacer"></div>
+    <div id="w2-ex-container"><!-- exercícios via JS --></div>
+    <div class="w2-spacer"></div>
+  </div>
+</div>
+
 <!-- MODAL DE SAÍDA DO TREINO -->
 <div class="exit-modal-backdrop" id="exit-modal">
   <div class="exit-modal">
@@ -2181,7 +2421,7 @@ function goBack() {
 function goHome() {
   stopAll();
   const savedSessions = state.history.sessions || [];
-  ['screen-home','screen-programs','screen-workout','screen-report','screen-history','screen-run-programs','screen-run','screen-run-report','screen-stretch-programs','screen-stretch-report'].forEach(id => {
+  ['screen-home','screen-programs','screen-workout','screen-workout-v2','screen-report','screen-history','screen-run-programs','screen-run','screen-run-report','screen-stretch-programs','screen-stretch-report'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -2222,13 +2462,7 @@ function selectProgram(label, title, focus, exCount, duration, muscles) {
   }));
   applyStoredLoads(state.exercises);
   state.exercises.forEach(ex => { ex.usedLoad = ex.load; });
-  resetWorkout();
-  state.exercises[0].status = 'active';
-  buildExerciseList();
-  loadExercise(0);
-  startGlobalTimer();
-  requestWakeLock();
-  goTo('workout');
+  startWorkoutV2();
 }
 
 /* =================================================================
@@ -2543,6 +2777,578 @@ function updateSeriesBars(currentSet, total, completedSeries) {
   }
 }
 
+/* ================================================================
+   WORKOUT V2 ENGINE — scroll-snap + séries por linha
+   ================================================================ */
+const w2 = {
+  focusedIdx: 0,       // exercício central
+  runningSet: null,    // { exIdx, setNum } série em execução
+  resting: null,       // { exIdx, afterSet } descanso em andamento
+  setInterval: null,
+  restInterval: null,
+  _setStart: 0,
+  _setPausedAccum: 0,
+  _setPauseStart: 0,
+  _restStart: 0,
+  _restDur: 0,
+  snapObserver: null,
+  _snapTimer: null,
+};
+
+function startWorkoutV2() {
+  stopAll();
+  clearInterval(w2.setInterval); clearInterval(w2.restInterval);
+  w2.runningSet = null;
+  w2.resting = null;
+
+  // Inicializa dados de série por exercício (carga por série herdando anterior)
+  state.exercises.forEach(ex => {
+    ex.status = 'pending';
+    ex.completedSeries = 0;
+    ex.setLoads = [];
+    for (let s = 0; s < ex.sets; s++) {
+      ex.setLoads.push(ex.load || 0);
+    }
+  });
+  // Primeiro visível (pula B de conjugado, se houver)
+  const firstIdx = state.exercises.findIndex((e,i) => !isConjugatedPartB(i));
+  w2.focusedIdx = firstIdx >= 0 ? firstIdx : 0;
+  state.exercises[w2.focusedIdx].status = 'active';
+  state.completedSets = 0;
+  state.totalSec = 0;
+
+  goTo('workout-v2');
+  requestWakeLock();
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    buildWorkoutV2();
+    startGlobalTimerV2();
+    setTimeout(() => snapToExercise(w2.focusedIdx, false), 60);
+    initSnapObserver();
+  }));
+}
+
+function isConjugatedPartB(idx) {
+  // Retorna true se este exercício é o B de um conjugado (ou seja, tem um A anterior conjugado com ele)
+  const ex = state.exercises[idx];
+  if (!ex || !ex.conjugated) return false;
+  const partnerIdx = state.exercises.findIndex((e,i) => i !== idx && e.name === ex.conjugated);
+  return partnerIdx !== -1 && partnerIdx < idx;
+}
+
+function getConjugatedPartner(idx) {
+  const ex = state.exercises[idx];
+  if (!ex || !ex.conjugated) return null;
+  const partnerIdx = state.exercises.findIndex((e,i) => i !== idx && e.name === ex.conjugated);
+  if (partnerIdx === -1) return null;
+  return { idx: partnerIdx, ex: state.exercises[partnerIdx] };
+}
+
+function buildWorkoutV2() {
+  const container = document.getElementById('w2-ex-container');
+  if (!container) return;
+  container.innerHTML = '';
+  state.exercises.forEach((ex, idx) => {
+    // Bloco "B" de conjugado não vira card próprio (renderiza dentro do A)
+    if (isConjugatedPartB(idx)) return;
+    const el = document.createElement('div');
+    el.className = 'w2-ex';
+    el.id = 'w2-ex-' + idx;
+    el.dataset.idx = idx;
+    container.appendChild(el);
+    renderExerciseV2(idx);
+  });
+  updateProgressV2();
+}
+
+function renderExerciseV2(idx) {
+  const ex = state.exercises[idx];
+  const el = document.getElementById('w2-ex-' + idx);
+  if (!ex || !el) return;
+
+  const partner = getConjugatedPartner(idx);
+  const isConj = !!(ex.conjugated && partner && partner.idx > idx); // é o A do par
+  const isFocused = idx === w2.focusedIdx;
+  const bothDone = isConj ? (ex.status === 'done' && partner.ex.status === 'done') : (ex.status === 'done');
+
+  el.className = 'w2-ex' + (isFocused ? ' focused' : ' collapsed') + (bothDone ? ' done' : '');
+
+  // Colapsado - só header
+  if (!isFocused) {
+    const displayName = isConj ? `${ex.name} + ${partner.ex.name}` : ex.name;
+    const badge = bothDone ? '<div class="w2-ex-badge check">✓</div>' :
+                  isConj ? '<div class="w2-ex-badge conj">CONJ</div>' :
+                  ex.isFoco ? '<div class="w2-ex-badge foco">★ FOCO</div>' : '';
+    const loadTxt = ex.load > 0 ? ex.load + 'kg' : (ex.isStretch ? 'mobilidade' : 'corporal');
+    const repsTxt = ex.isStretch && ex.timeS > 0 ? ex.timeS + 's' : ex.reps + ' reps';
+    const subLine = isConj
+      ? `${ex.sets}×${repsTxt} + ${partner.ex.sets}×${partner.ex.reps} reps`
+      : `${ex.sets} × ${repsTxt} · ${loadTxt}`;
+    el.innerHTML = `
+      <div class="w2-ex-head">
+        <div class="w2-ex-num">${String(idx+1).padStart(2,'0')}</div>
+        <div class="w2-ex-thumb"><img id="w2-thumb-${idx}" src="" alt=""></div>
+        <div class="w2-ex-headinfo">
+          <div class="w2-ex-name">${displayName}</div>
+          <div class="w2-ex-sub">${ex.desc || subLine}</div>
+        </div>
+        ${badge}
+      </div>`;
+    loadThumb(idx, 'w2-thumb-' + idx);
+    return;
+  }
+
+  // Focused
+  let badge = '';
+  if (bothDone) badge = '<div class="w2-ex-badge check">✓</div>';
+  else if (isConj) badge = '<div class="w2-ex-badge conj">CONJ</div>';
+  else if (ex.isFoco) badge = '<div class="w2-ex-badge foco">★ FOCO</div>';
+
+  const loadTxt = ex.load > 0 ? ex.load + 'kg' : (ex.isStretch ? 'mobilidade' : 'corporal');
+  const repsTxt = ex.isStretch && ex.timeS > 0 ? ex.timeS + 's' : ex.reps + ' reps';
+  const subLine = `${ex.sets} × ${repsTxt} · ${loadTxt}`;
+
+  let html = '';
+
+  // Header (não repete no conjugado — vira sub-title)
+  if (!isConj) {
+    html += `
+      <div class="w2-ex-head">
+        <div class="w2-ex-num">${String(idx+1).padStart(2,'0')}</div>
+        <div class="w2-ex-thumb"><img id="w2-thumb-${idx}" src="" alt=""></div>
+        <div class="w2-ex-headinfo">
+          <div class="w2-ex-name">${ex.name}</div>
+          <div class="w2-ex-sub">${ex.desc || subLine}</div>
+        </div>
+        ${badge}
+      </div>`;
+  } else {
+    // Header simplificado para conjugado
+    html += `
+      <div class="w2-ex-head">
+        <div class="w2-ex-num">${String(idx+1).padStart(2,'0')}</div>
+        <div class="w2-ex-headinfo">
+          <div class="w2-ex-name">Conjugado</div>
+          <div class="w2-ex-sub">${ex.name} + ${partner.ex.name}</div>
+        </div>
+        ${badge}
+      </div>`;
+  }
+
+  html += `<div class="w2-ex-body">`;
+
+  if (isConj) {
+    html += `<div class="w2-conj-tag">⇄ CONJUGADO · SEM DESCANSO ENTRE A E B</div>`;
+    // Meta consolidada
+    const restTxt = (ex.rest || partner.ex.rest) > 0 ? Math.max(ex.rest||0, partner.ex.rest||0) + '<span>s</span>' : '—';
+    html += `
+      <div class="w2-meta">
+        <div class="w2-meta-item"><div class="w2-meta-lbl">SÉRIES</div><div class="w2-meta-val">${ex.sets}</div></div>
+        <div class="w2-meta-item"><div class="w2-meta-lbl">MODO</div><div class="w2-meta-val" style="font-size:11px">A→B</div></div>
+        <div class="w2-meta-item"><div class="w2-meta-lbl">DESCANSO</div><div class="w2-meta-val">${restTxt}</div></div>
+      </div>`;
+    // Sub-bloco A
+    html += renderConjugatedPart(idx, 'a', ex);
+    // Sub-bloco B
+    html += renderConjugatedPart(partner.idx, 'b', partner.ex);
+  } else {
+    // Meta
+    const restTxt = ex.rest > 0 ? ex.rest + '<span>s</span>' : '—';
+    html += `
+      <div class="w2-meta">
+        <div class="w2-meta-item"><div class="w2-meta-lbl">SÉRIES</div><div class="w2-meta-val">${ex.sets}</div></div>
+        <div class="w2-meta-item"><div class="w2-meta-lbl">${ex.isStretch && ex.timeS ? 'TEMPO' : 'REPS'}</div><div class="w2-meta-val">${ex.isStretch && ex.timeS ? ex.timeS+'<span>s</span>' : ex.reps}</div></div>
+        <div class="w2-meta-item"><div class="w2-meta-lbl">DESCANSO</div><div class="w2-meta-val">${restTxt}</div></div>
+      </div>`;
+    html += `<div class="w2-series-title">SÉRIES</div>`;
+    for (let s = 1; s <= ex.sets; s++) {
+      html += renderSerieRow(idx, s);
+    }
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+
+  // Thumbs
+  loadThumb(idx, 'w2-thumb-' + idx);
+  if (isConj) {
+    loadThumb(idx, 'w2-conjthumb-a-' + idx);
+    loadThumb(partner.idx, 'w2-conjthumb-b-' + partner.idx);
+  }
+}
+
+function renderConjugatedPart(idx, tag, ex) {
+  const tagLabel = tag === 'a' ? 'PARTE A' : 'PARTE B';
+  let html = `<div class="w2-conj-part">
+    <div class="w2-conj-head">
+      <div class="w2-conj-part-tag ${tag}">${tagLabel}</div>
+      <div class="w2-conj-part-thumb"><img id="w2-conjthumb-${tag}-${idx}" src="" alt=""></div>
+      <div class="w2-conj-part-name">${ex.name}</div>
+    </div>`;
+  for (let s = 1; s <= ex.sets; s++) {
+    html += renderSerieRow(idx, s);
+  }
+  html += `</div>`;
+  return html;
+}
+
+function loadThumb(exIdx, elId) {
+  const ex = state.exercises[exIdx];
+  const img = document.getElementById(elId);
+  if (!img || !ex) return;
+  const imgKey = ex.imageKey || null;
+  const imgSrc = imgKey && EX_IMAGES[imgKey] ? EX_IMAGES[imgKey] : null;
+  if (imgSrc) {
+    img.onload = () => { img.style.opacity = '1'; };
+    img.src = imgSrc;
+    if (img.complete) img.style.opacity = '1';
+  }
+}
+
+function isSerieActiveInConjugated(exIdx, setNum) {
+  // Determina se esta linha é a próxima a executar considerando ordem alternada A→B→A→B
+  const ex = state.exercises[exIdx];
+  if (!ex.conjugated) return setNum === ex.completedSeries + 1;
+
+  const partner = getConjugatedPartner(exIdx);
+  if (!partner) return setNum === ex.completedSeries + 1;
+
+  // A é o de índice menor
+  const isA = exIdx < partner.idx;
+  const aEx = isA ? ex : partner.ex;
+  const bEx = isA ? partner.ex : ex;
+  const aDone = aEx.completedSeries;
+  const bDone = bEx.completedSeries;
+
+  // Próxima série a executar:
+  // Se aDone === bDone → próxima é série (aDone+1) de A
+  // Se aDone > bDone → próxima é série aDone de B (igualar)
+  if (aDone === bDone) {
+    // A da série (aDone+1) é a ativa
+    return isA && setNum === aDone + 1;
+  } else {
+    // B da série aDone é a ativa
+    return !isA && setNum === aDone;
+  }
+}
+
+function renderSerieRow(exIdx, setNum) {
+  const ex = state.exercises[exIdx];
+  const done = setNum <= ex.completedSeries;
+  const isRunning = w2.runningSet && w2.runningSet.exIdx === exIdx && w2.runningSet.setNum === setNum;
+  const isResting = w2.resting && w2.resting.exIdx === exIdx && w2.resting.afterSet === setNum;
+  const isActive = !done && !isRunning && !isResting && !w2.runningSet && !w2.resting && isSerieActiveInConjugated(exIdx, setNum);
+  const isLocked = !done && !isRunning && !isActive && !isResting;
+
+  const load = (ex.setLoads && ex.setLoads[setNum-1]) || 0;
+  const repsTxt = ex.isStretch && ex.timeS > 0 ? ex.timeS + 's' : ex.reps + ' reps';
+
+  // Descanso inline no lugar da linha
+  if (isResting) {
+    return `
+      <div class="w2-rest-inline" id="w2-serie-${exIdx}-${setNum}">
+        <div class="w2-rest-left">
+          <div class="w2-rest-lbl">DESCANSO</div>
+          <div class="w2-rest-timer" id="w2-rest-timer">${w2.resting.duration || ex.rest}</div>
+        </div>
+        <div class="w2-rest-skip" onclick="skipRestV2()">PULAR →</div>
+      </div>`;
+  }
+
+  let cls = 'w2-serie';
+  if (done) cls += ' done';
+  else if (isRunning) cls += ' running';
+  else if (isActive) cls += ' active';
+  else if (isLocked) cls += ' locked';
+
+  // Carga inline (não para alongamento)
+  let loadCtrl = '';
+  if (!ex.isStretch) {
+    if (done) {
+      loadCtrl = `<div class="w2-serie-load"><div class="w2-load-val">${load > 0 ? load : '—'}<small>${load>0?'kg':''}</small></div></div>`;
+    } else if (isActive || isRunning) {
+      loadCtrl = `<div class="w2-serie-load">
+        <div class="w2-load-btn" onclick="adjustSetLoad(${exIdx},${setNum},-1)">−</div>
+        <div class="w2-load-val">${load}<small>kg</small></div>
+        <div class="w2-load-btn" onclick="adjustSetLoad(${exIdx},${setNum},1)">+</div>
+      </div>`;
+    } else {
+      loadCtrl = `<div class="w2-serie-load"><div class="w2-load-val" style="opacity:.4">${load > 0 ? load : '—'}<small>${load>0?'kg':''}</small></div></div>`;
+    }
+  }
+
+  // Ação
+  let action = '';
+  if (done) {
+    action = `<div class="w2-serie-action done-check">✓</div>`;
+  } else if (isRunning) {
+    action = `<div class="w2-serie-timer" id="w2-set-timer">00:00</div>
+      <button class="w2-serie-action finish" onclick="finishSetV2()">OK</button>`;
+  } else if (isActive) {
+    action = `<button class="w2-serie-action play" onclick="startSetV2(${exIdx},${setNum})">▶ INICIAR</button>`;
+  } else {
+    action = `<div class="w2-serie-action locked">—</div>`;
+  }
+
+  return `
+    <div class="${cls}" id="w2-serie-${exIdx}-${setNum}">
+      <div class="w2-serie-num">${setNum}</div>
+      <div class="w2-serie-info">
+        <div class="w2-serie-reps">${repsTxt}</div>
+        <div class="w2-serie-meta">Série ${setNum} de ${ex.sets}</div>
+      </div>
+      ${loadCtrl}
+      ${action}
+    </div>`;
+}
+
+function adjustSetLoad(exIdx, setNum, dir) {
+  const ex = state.exercises[exIdx];
+  if (!ex.setLoads) return;
+  const step = 2.5;
+  let v = (ex.setLoads[setNum-1] || 0) + dir * step;
+  if (v < 0) v = 0;
+  // Propaga para as séries seguintes ainda não feitas (herança)
+  for (let s = setNum; s <= ex.sets; s++) {
+    if (s - 1 >= ex.completedSeries) ex.setLoads[s-1] = v;
+  }
+  renderExerciseV2(exIdx);
+}
+
+function startSetV2(exIdx, setNum) {
+  if (w2.runningSet || w2.resting) return;
+  w2.runningSet = { exIdx, setNum };
+  w2._setStart = Date.now();
+  w2._setPausedAccum = 0;
+  w2._setPauseStart = 0;
+
+  renderExerciseV2(exIdx);
+
+  clearInterval(w2.setInterval);
+  w2.setInterval = setInterval(() => {
+    if (state.isGlobalPaused) return;
+    const sec = Math.floor((Date.now() - w2._setStart - w2._setPausedAccum) / 1000);
+    const el = document.getElementById('w2-set-timer');
+    if (el) el.textContent = fmt(sec);
+  }, 500);
+}
+
+function finishSetV2() {
+  if (!w2.runningSet) return;
+  clearInterval(w2.setInterval);
+  const { exIdx, setNum } = w2.runningSet;
+  const ex = state.exercises[exIdx];
+
+  // Marca série como feita
+  ex.completedSeries = Math.max(ex.completedSeries, setNum);
+  ex.usedLoad = ex.setLoads[setNum-1] || ex.usedLoad || 0;
+  state.completedSets++;
+  w2.runningSet = null;
+
+  // Conjugado?
+  if (ex.conjugated) {
+    const partner = getConjugatedPartner(exIdx);
+    if (partner) {
+      const aIdx = exIdx < partner.idx ? exIdx : partner.idx;
+      const bIdx = exIdx < partner.idx ? partner.idx : exIdx;
+      const aEx = state.exercises[aIdx];
+      const bEx = state.exercises[bIdx];
+      const isA = exIdx === aIdx;
+
+      // Card sempre fica no A (o "container" do par)
+      const cardIdx = aIdx;
+
+      if (isA) {
+        // Acabou A → próxima é B da mesma série, sem descanso
+        renderExerciseV2(cardIdx);
+        updateProgressV2();
+        return;
+      } else {
+        // Acabou B → par de séries completo
+        const pairSeries = Math.min(aEx.completedSeries, bEx.completedSeries);
+        if (pairSeries >= aEx.sets) {
+          // Terminou todas as séries do conjugado
+          aEx.status = 'done';
+          bEx.status = 'done';
+          renderExerciseV2(cardIdx);
+          updateProgressV2();
+          advanceAfterExercise(cardIdx);
+        } else {
+          // Descanso e volta para série (pairSeries+1) de A
+          const restSecs = Math.max(aEx.rest || 0, bEx.rest || 0, 60);
+          startRestV2(bIdx, setNum, restSecs, aIdx, pairSeries + 1);
+        }
+      }
+      return;
+    }
+  }
+
+  // Exercício normal
+  const isLastSet = ex.completedSeries >= ex.sets;
+  if (isLastSet) {
+    ex.status = 'done';
+    renderExerciseV2(exIdx);
+    updateProgressV2();
+    advanceAfterExercise(exIdx);
+  } else {
+    startRestV2(exIdx, setNum, ex.rest || 90, exIdx, setNum + 1);
+  }
+}
+
+// Legado — não usada mais mas mantida por compatibilidade
+function handleConjugatedV2() {}
+
+function startRestV2(restExIdx, afterSet, seconds, nextExIdx, nextSetNum) {
+  w2.resting = { exIdx: restExIdx, afterSet, nextExIdx, nextSetNum, duration: seconds };
+  w2._restStart = Date.now();
+  w2._restDur = seconds;
+
+  // Se restExIdx é B de um conjugado, renderiza o card do A (que contém os dois)
+  const partner = getConjugatedPartner(restExIdx);
+  const cardIdx = (partner && partner.idx < restExIdx) ? partner.idx : restExIdx;
+  renderExerciseV2(cardIdx);
+
+  clearInterval(w2.restInterval);
+  w2.restInterval = setInterval(() => {
+    if (state.isGlobalPaused) return;
+    const elapsed = Math.floor((Date.now() - w2._restStart) / 1000);
+    const remaining = Math.max(0, seconds - elapsed);
+    const el = document.getElementById('w2-rest-timer');
+    if (el) el.textContent = remaining;
+    if (remaining <= 0) endRestV2();
+  }, 500);
+}
+
+function endRestV2() {
+  clearInterval(w2.restInterval);
+  if (!w2.resting) return;
+  w2.resting = null;
+  renderAllV2();
+}
+
+function skipRestV2() {
+  clearInterval(w2.restInterval);
+  w2.resting = null;
+  renderAllV2();
+}
+
+function advanceAfterExercise(exIdx) {
+  // Auto-avança para o próximo bloco visível pendente (pula B de conjugado)
+  const nextIdx = state.exercises.findIndex((e,i) => i > exIdx && e.status !== 'done' && !isConjugatedPartB(i));
+  if (nextIdx === -1) {
+    const allDone = state.exercises.every(e => e.status === 'done');
+    if (allDone) { finishWorkout(); return; }
+    const anyPending = state.exercises.findIndex((e,i) => e.status !== 'done' && !isConjugatedPartB(i));
+    if (anyPending !== -1) {
+      state.exercises[anyPending].status = 'active';
+      w2.focusedIdx = anyPending;
+      renderAllV2();
+      setTimeout(() => snapToExercise(anyPending, true), 200);
+    }
+    return;
+  }
+  state.exercises[nextIdx].status = 'active';
+  w2.focusedIdx = nextIdx;
+  renderAllV2();
+  setTimeout(() => snapToExercise(nextIdx, true), 250);
+}
+
+function renderAllV2() {
+  state.exercises.forEach((ex, idx) => {
+    if (isConjugatedPartB(idx)) return; // B fica dentro do A
+    renderExerciseV2(idx);
+  });
+  updateProgressV2();
+}
+
+function updateProgressV2() {
+  const visibleUnits = state.exercises.filter((e,i) => !isConjugatedPartB(i));
+  const total = visibleUnits.length;
+  const done = visibleUnits.filter(e => {
+    if (e.conjugated) {
+      const partner = state.exercises.find(x => x.name === e.conjugated);
+      return e.status === 'done' && (!partner || partner.status === 'done');
+    }
+    return e.status === 'done';
+  }).length;
+  // posição atual no scroll (dentro de visibleUnits)
+  const posIdx = visibleUnits.findIndex(e => state.exercises.indexOf(e) === w2.focusedIdx);
+  const el = document.getElementById('w2-prog-txt');
+  const fill = document.getElementById('w2-prog-fill');
+  if (el) el.textContent = (Math.max(0,posIdx) + 1) + '/' + total;
+  if (fill) fill.style.width = Math.max(5, (done / total) * 100) + '%';
+}
+
+function snapToExercise(idx, smooth) {
+  const el = document.getElementById('w2-ex-' + idx);
+  const scroll = document.getElementById('w2-scroll');
+  if (!el || !scroll) return;
+  const target = el.offsetTop - (scroll.clientHeight / 2) + (el.clientHeight / 2);
+  scroll.scrollTo({ top: target, behavior: smooth ? 'smooth' : 'auto' });
+}
+
+function initSnapObserver() {
+  const scroll = document.getElementById('w2-scroll');
+  if (!scroll) return;
+  scroll.addEventListener('scroll', () => {
+    if (w2.runningSet || w2.resting) return;
+    clearTimeout(w2._snapTimer);
+    w2._snapTimer = setTimeout(() => {
+      const center = scroll.scrollTop + scroll.clientHeight / 2;
+      let best = 0, bestDist = Infinity;
+      state.exercises.forEach((ex, idx) => {
+        if (isConjugatedPartB(idx)) return;
+        const el = document.getElementById('w2-ex-' + idx);
+        if (!el) return;
+        const elCenter = el.offsetTop + el.clientHeight / 2;
+        const dist = Math.abs(elCenter - center);
+        if (dist < bestDist) { bestDist = dist; best = idx; }
+      });
+      if (best !== w2.focusedIdx) {
+        w2.focusedIdx = best;
+        renderAllV2();
+      }
+    }, 120);
+  }, { passive: true });
+}
+
+function startGlobalTimerV2() {
+  clearInterval(state.totalInterval);
+  state._timerStartedAt = Date.now() - (state.totalSec * 1000);
+  state.totalInterval = setInterval(() => {
+    if (state.isGlobalPaused) return;
+    state.totalSec = Math.floor((Date.now() - state._timerStartedAt) / 1000);
+    const el = document.getElementById('w2-total-timer');
+    if (el) el.textContent = fmt(state.totalSec);
+  }, 500);
+}
+
+function toggleGlobalPauseV2() {
+  state.isGlobalPaused = !state.isGlobalPaused;
+  const btn = document.getElementById('w2-pause-btn');
+  if (btn) btn.classList.toggle('paused', state.isGlobalPaused);
+  // Ajusta timers para não contar tempo pausado
+  if (state.isGlobalPaused) {
+    w2._pauseAt = Date.now();
+  } else {
+    if (w2._pauseAt) {
+      const delta = Date.now() - w2._pauseAt;
+      state._timerStartedAt += delta;
+      if (w2.runningSet) w2._setPausedAccum += delta;
+      if (w2.resting) w2._restStart += delta;
+      w2._pauseAt = 0;
+    }
+  }
+}
+
+function confirmExitV2() {
+  if (!state.isGlobalPaused) toggleGlobalPauseV2();
+  const sub = document.getElementById('exit-modal-sub');
+  if (sub) sub.textContent = fmt(state.totalSec) + ' de treino · ' + state.completedSets + ' séries completas';
+  document.getElementById('exit-modal').dataset.context = 'workout-v2';
+  document.getElementById('exit-modal').classList.add('show');
+}
+
 function startGlobalTimer() {
   if (state.totalInterval) return;
   state._timerStartedAt = Date.now() - (state.totalSec * 1000);
@@ -2562,6 +3368,10 @@ function stopAll() {
   clearInterval(state.totalInterval); state.totalInterval = null;
   clearInterval(state.setInterval);   state.setInterval = null;
   clearInterval(state.restInterval);  state.restInterval = null;
+  if (typeof w2 !== 'undefined') {
+    clearInterval(w2.setInterval);  w2.setInterval = null;
+    clearInterval(w2.restInterval); w2.restInterval = null;
+  }
 }
 
 function fmt(s) {
@@ -2941,13 +3751,18 @@ function exitCancel() {
   if (modal.dataset.context === 'run' && runState.paused) {
     toggleRunPause();
   }
+  // Retomar workout-v2 se estava pausado por causa do modal
+  if (modal.dataset.context === 'workout-v2' && state.isGlobalPaused) {
+    toggleGlobalPauseV2();
+  }
   delete modal.dataset.context;
 }
 function exitSave() {
   const modal = document.getElementById('exit-modal');
   modal.classList.remove('show');
-  if (modal.dataset.context === 'run') {
-    delete modal.dataset.context;
+  const ctx = modal.dataset.context;
+  delete modal.dataset.context;
+  if (ctx === 'run') {
     runFinish();
   } else {
     finishWorkout();
@@ -2956,8 +3771,9 @@ function exitSave() {
 function exitNoSave() {
   const modal = document.getElementById('exit-modal');
   modal.classList.remove('show');
-  if (modal.dataset.context === 'run') {
-    delete modal.dataset.context;
+  const ctx = modal.dataset.context;
+  delete modal.dataset.context;
+  if (ctx === 'run') {
     clearInterval(runState.interval);
     clearInterval(runState.totalInterval);
     runState.running = false;
@@ -3697,11 +4513,9 @@ function selectStretch(key) {
   const prog = STRETCH_PROGRAMS[key];
   if (!prog) return;
 
-  // Sobrescreve cartridge e program ANTES do reset
   state.cartridge = { id:'alongamento-diario', name:'ALONGAMENTO DIÁRIO' };
   state.program = { label: prog.label, title: prog.title, focus: prog.focus };
 
-  // Monta exercises no formato do workout engine, sem carga
   state.exercises = prog.exercises.map((ex, i) => ({
     ...ex,
     idx: i,
@@ -3716,20 +4530,7 @@ function selectStretch(key) {
     reps: ex.reps || 0,
   }));
 
-  // Reset limpa timers e DOM da sessão anterior
-  resetWorkout();
-
-  // Marca primeiro como active e navega
-  state.exercises[0].status = 'active';
-  goTo('workout');
-  requestWakeLock();
-
-  // Constrói UI após navegação
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    buildExerciseList();
-    loadExercise(0);
-    startGlobalTimer();
-  }));
+  startWorkoutV2();
 }
 
 const RUN_PROGRAMS = {
