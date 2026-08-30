@@ -3047,28 +3047,18 @@ function renderSerieRow(exIdx, setNum) {
   const ex = state.exercises[exIdx];
   const done = setNum <= ex.completedSeries;
   const isRunning = w2.runningSet && w2.runningSet.exIdx === exIdx && w2.runningSet.setNum === setNum;
-  const isResting = w2.resting && w2.resting.exIdx === exIdx && w2.resting.afterSet === setNum;
+  // Descanso agora aparece na PRÓXIMA série (não na que acabou)
+  const isResting = w2.resting && w2.resting.nextExIdx === exIdx && w2.resting.nextSetNum === setNum;
   const isActive = !done && !isRunning && !isResting && !w2.runningSet && !w2.resting && isSerieActiveInConjugated(exIdx, setNum);
   const isLocked = !done && !isRunning && !isActive && !isResting;
 
   const load = (ex.setLoads && ex.setLoads[setNum-1]) || 0;
   const repsTxt = ex.isStretch && ex.timeS > 0 ? ex.timeS + 's' : ex.reps + ' reps';
 
-  // Descanso inline no lugar da linha
-  if (isResting) {
-    return `
-      <div class="w2-rest-inline" id="w2-serie-${exIdx}-${setNum}">
-        <div class="w2-rest-left">
-          <div class="w2-rest-lbl">DESCANSO</div>
-          <div class="w2-rest-timer" id="w2-rest-timer">${w2.resting.duration || ex.rest}</div>
-        </div>
-        <div class="w2-rest-skip" onclick="event.stopPropagation();skipRestV2()">PULAR →</div>
-      </div>`;
-  }
-
   let cls = 'w2-serie';
   if (done) cls += ' done';
   else if (isRunning) cls += ' running';
+  else if (isResting) cls += ' resting';
   else if (isActive) cls += ' active';
   else if (isLocked) cls += ' locked';
 
@@ -3077,7 +3067,7 @@ function renderSerieRow(exIdx, setNum) {
   if (!ex.isStretch) {
     if (done) {
       loadCtrl = `<div class="w2-serie-load"><div class="w2-load-val">${load > 0 ? load : '—'}<small>${load>0?'kg':''}</small></div></div>`;
-    } else if (isActive || isRunning) {
+    } else if (isActive || isRunning || isResting) {
       loadCtrl = `<div class="w2-serie-load">
         <div class="w2-load-btn" onclick="event.stopPropagation();adjustSetLoad(${exIdx},${setNum},-1)">−</div>
         <div class="w2-load-val">${load}<small>kg</small></div>
@@ -3095,6 +3085,10 @@ function renderSerieRow(exIdx, setNum) {
   } else if (isRunning) {
     action = `<div class="w2-serie-timer" id="w2-set-timer">00:00</div>
       <button class="w2-serie-action finish" onclick="event.stopPropagation();finishSetV2()">OK</button>`;
+  } else if (isResting) {
+    // Timer de descanso + botão PULAR
+    action = `<div class="w2-serie-timer rest" id="w2-rest-timer">${w2.resting.duration || 0}</div>
+      <button class="w2-serie-action finish" onclick="event.stopPropagation();skipRestV2()">PULAR</button>`;
   } else if (isActive) {
     action = `<button class="w2-serie-action play" onclick="event.stopPropagation();startSetV2(${exIdx},${setNum})">▶ INICIAR</button>`;
   } else {
@@ -3106,7 +3100,7 @@ function renderSerieRow(exIdx, setNum) {
       <div class="w2-serie-num">${setNum}</div>
       <div class="w2-serie-info">
         <div class="w2-serie-reps">${repsTxt}</div>
-        <div class="w2-serie-meta">Série ${setNum} de ${ex.sets}</div>
+        <div class="w2-serie-meta">${isResting ? 'Descanso · próxima em breve' : 'Série ' + setNum + ' de ' + ex.sets}</div>
       </div>
       ${loadCtrl}
       ${action}
@@ -3226,10 +3220,13 @@ function startRestV2(restExIdx, afterSet, seconds, nextExIdx, nextSetNum) {
   w2._restStart = Date.now();
   w2._restDur = seconds;
 
-  // Se restExIdx é B de um conjugado, renderiza o card do A (que contém os dois)
-  const partner = getConjugatedPartner(restExIdx);
-  const cardIdx = (partner && partner.idx < restExIdx) ? partner.idx : restExIdx;
-  renderExerciseV2(cardIdx);
+  // Renderiza o card onde a próxima série está (é lá que o timer aparece)
+  // renderExerciseV2 já redireciona B → A automaticamente
+  renderExerciseV2(nextExIdx);
+  // Se o descanso é entre exercícios diferentes, também precisa re-renderizar o que acabou
+  if (nextExIdx !== restExIdx) {
+    renderExerciseV2(restExIdx);
+  }
 
   clearInterval(w2.restInterval);
   w2.restInterval = setInterval(() => {
