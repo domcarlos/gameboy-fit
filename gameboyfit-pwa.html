@@ -3065,28 +3065,32 @@ function loadThumb(exIdx, elId) {
 
 function isSerieActiveInConjugated(exIdx, setNum) {
   // Determina se esta linha é a próxima a executar considerando ordem alternada A→B→A→B
+  // Suporta A e B com números de séries diferentes
   const ex = state.exercises[exIdx];
   if (!ex.conjugated) return setNum === ex.completedSeries + 1;
 
   const partner = getConjugatedPartner(exIdx);
   if (!partner) return setNum === ex.completedSeries + 1;
 
-  // A é o de índice menor
   const isA = exIdx < partner.idx;
   const aEx = isA ? ex : partner.ex;
   const bEx = isA ? partner.ex : ex;
   const aDone = aEx.completedSeries;
   const bDone = bEx.completedSeries;
+  const aFull = aDone >= aEx.sets;
+  const bFull = bDone >= bEx.sets;
 
-  // Próxima série a executar:
-  // Se aDone === bDone → próxima é série (aDone+1) de A
-  // Se aDone > bDone → próxima é série aDone de B (igualar)
-  if (aDone === bDone) {
-    // A da série (aDone+1) é a ativa
+  // Se um dos lados já terminou tudo, só o outro pode ativar
+  if (aFull && !bFull) return !isA && setNum === bDone + 1;
+  if (bFull && !aFull) return isA && setNum === aDone + 1;
+  if (aFull && bFull) return false;
+
+  // Ambos têm séries pendentes → ordem alternada A→B
+  // Próxima é A se aDone <= bDone; senão B
+  if (aDone <= bDone) {
     return isA && setNum === aDone + 1;
   } else {
-    // B da série aDone é a ativa
-    return !isA && setNum === aDone;
+    return !isA && setNum === bDone + 1;
   }
 }
 
@@ -3213,24 +3217,56 @@ function finishSetV2() {
         const isA = exIdx === aIdx;
         const cardIdx = aIdx;
 
-        if (isA) {
+        const aFull = aEx.completedSeries >= aEx.sets;
+        const bFull = bEx.completedSeries >= bEx.sets;
+        const restSecs = Math.max(aEx.rest || 0, bEx.rest || 0, 60);
+
+        // Se ambos terminaram → fecha o par
+        if (aFull && bFull) {
+          aEx.status = 'done';
+          bEx.status = 'done';
           renderExerciseV2(cardIdx);
           updateProgressV2();
+          advanceAfterExercise(cardIdx);
           return;
-        } else {
-          const pairSeries = Math.min(aEx.completedSeries, bEx.completedSeries);
-          if (pairSeries >= aEx.sets) {
-            aEx.status = 'done';
-            bEx.status = 'done';
+        }
+
+        if (isA) {
+          // Acabou série de A
+          // Próximo seria B da mesma série — vai direto sem descanso SE B ainda tem séries
+          if (!bFull && bEx.completedSeries < setNum) {
             renderExerciseV2(cardIdx);
             updateProgressV2();
-            advanceAfterExercise(cardIdx);
-          } else {
-            const restSecs = Math.max(aEx.rest || 0, bEx.rest || 0, 60);
-            startRestV2(bIdx, setNum, restSecs, aIdx, pairSeries + 1);
+            return;
           }
+          // Caso B já esteja cheio OU já tenha feito essa série: descanso e vai pra próxima
+          let nextIdx, nextSetNum;
+          if (!aFull && (!bFull ? aEx.completedSeries <= bEx.completedSeries : true)) {
+            nextIdx = aIdx;
+            nextSetNum = aEx.completedSeries + 1;
+          } else {
+            nextIdx = bIdx;
+            nextSetNum = bEx.completedSeries + 1;
+          }
+          startRestV2(aIdx, setNum, restSecs, nextIdx, nextSetNum);
+          return;
+        } else {
+          // Acabou série de B → descanso e vai para A (ou B se A tá cheio)
+          let nextIdx, nextSetNum;
+          if (!aFull && aEx.completedSeries <= bEx.completedSeries) {
+            nextIdx = aIdx;
+            nextSetNum = aEx.completedSeries + 1;
+          } else if (!bFull) {
+            nextIdx = bIdx;
+            nextSetNum = bEx.completedSeries + 1;
+          } else {
+            // só A tem séries sobrando
+            nextIdx = aIdx;
+            nextSetNum = aEx.completedSeries + 1;
+          }
+          startRestV2(bIdx, setNum, restSecs, nextIdx, nextSetNum);
+          return;
         }
-        return;
       }
     }
 
@@ -4581,42 +4617,44 @@ const HIPERTROFIA_PROGRAMS = {
   HA: {
     label: 'A', title: 'Posterior · Costas · Glúteo', focus: 'HIPERTROFIA',
     color: '#CD7F32',
-    durationTotal: '~70 min',
+    durationTotal: '~55 min',
     exercises: [
       { name:'CADEIRA ABDUTORA', desc:'ABDUTORES · GLÚTEO MÉDIO · ESTABILIZADORES', sets:3, reps:15, rest:0, load:72, lastLoad:'última: —', isFoco:false, conjugated:'CADEIRA ADUTORA', imageKey:null },
-      { name:'CADEIRA ADUTORA', desc:'ADUTORES · VIRILHA · ESTABILIZADORES', sets:3, reps:15, rest:45, load:72, lastLoad:'última: —', isFoco:false, conjugated:'CADEIRA ABDUTORA', imageKey:null },
-      { name:'HIP THRUST BARRA', desc:'GLÚTEO MÁXIMO · POSTERIOR · CORE · PAUSA 1s NO TOPO', sets:4, reps:6, rest:90, load:120, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'hip_thrust_barra' },
-      { name:'STIFF / RDL BARRA', desc:'POSTERIOR DE COXA · GLÚTEO · DESCE 3s', sets:4, reps:8, rest:90, load:40, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'stiff_rdl_barra' },
-      { name:'BULGARIAN SPLIT SQUAT', desc:'GLÚTEO · QUADRÍCEPS · MÁQUINA COM HALTERES · 8 REPS CADA PERNA', sets:3, reps:8, rest:60, load:7.5, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:null },
-      { name:'MESA FLEXORA UNILATERAL', desc:'POSTERIOR DE COXA · ISOLADO · 12 REPS CADA PERNA · SEM DESC. ENTRE LADOS', sets:3, reps:12, rest:60, load:27, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'mesa_flexora' },
-      { name:'NORDIC CURL', desc:'ISQUIOTIBIAL · EXCÊNTRICO 4s · PESO CORPORAL', sets:3, reps:6, rest:60, load:0, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'nordic_curl' },
-      { name:'PUXADA ALTA POLIA', desc:'COSTAS · BÍCEPS · PEGADA LARGA PRONADA', sets:4, reps:10, rest:0, load:63, lastLoad:'última: —', isFoco:false, conjugated:'REMADA CURVADA', imageKey:'puxada_alta_polia' },
-      { name:'REMADA CURVADA', desc:'COSTAS · TRAPÉZIO · ROMBÓIDE · TRONCO 45°', sets:4, reps:8, rest:75, load:40, lastLoad:'última: —', isFoco:false, conjugated:'PUXADA ALTA POLIA', imageKey:'remada_curvada' },
-      { name:'PULLDOWN PEGADA NEUTRA', desc:'COSTAS · LATÍSSIMO · PEGADA PARALELA ESTREITA', sets:3, reps:12, rest:60, load:55, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:null },
-      { name:'PALLOF PRESS', desc:'CORE · ANTI-ROTAÇÃO · PROTEÇÃO LOMBAR · 12 REPS CADA LADO', sets:3, reps:12, rest:45, load:12, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'pallof_press' },
-      { name:'OBLÍQUO + INFRA BOSU', desc:'OBLÍQUO E CORE INFERIOR · FAZ OS DOIS JUNTOS NO BOSU', sets:3, reps:20, rest:45, load:0, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'obliquo_cruzado' },
+      { name:'CADEIRA ADUTORA', desc:'ADUTORES · VIRILHA · EMENDA DIRETO COM ABDUTORA', sets:3, reps:15, rest:30, load:72, lastLoad:'última: —', isFoco:false, conjugated:'CADEIRA ABDUTORA', imageKey:null },
+      { name:'HIP THRUST BARRA', desc:'GLÚTEO MÁXIMO · POSTERIOR · CORE · PAUSA 1s NO TOPO', sets:4, reps:6, rest:60, load:120, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'hip_thrust_barra' },
+      { name:'STIFF / RDL BARRA', desc:'POSTERIOR DE COXA · GLÚTEO · DESCE 3s', sets:4, reps:8, rest:60, load:40, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'stiff_rdl_barra' },
+      { name:'BULGARIAN SPLIT SQUAT', desc:'GLÚTEO · QUADRÍCEPS · MÁQUINA COM HALTERES · 8 REPS CADA PERNA', sets:3, reps:8, rest:45, load:7.5, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:null },
+      { name:'MESA FLEXORA UNILATERAL', desc:'POSTERIOR DE COXA · ISOLADO · 12 REPS CADA PERNA · SEM DESC. ENTRE LADOS', sets:3, reps:12, rest:45, load:27, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'mesa_flexora' },
+      { name:'NORDIC CURL', desc:'ISQUIOTIBIAL · EXCÊNTRICO 4s · PESO CORPORAL', sets:3, reps:6, rest:45, load:0, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'nordic_curl' },
+      { name:'PUXADA ALTA POLIA', desc:'COSTAS · BÍCEPS · PEGADA LARGA PRONADA · DESCE ATÉ PEITO', sets:4, reps:10, rest:0, load:63, lastLoad:'última: —', isFoco:false, conjugated:'REMADA CURVADA', imageKey:'puxada_alta_polia' },
+      { name:'REMADA CURVADA', desc:'COSTAS · TRAPÉZIO · ROMBÓIDE · TRONCO 45° · EMENDA COM PUXADA', sets:4, reps:8, rest:60, load:40, lastLoad:'última: —', isFoco:false, conjugated:'PUXADA ALTA POLIA', imageKey:'remada_curvada' },
+      { name:'PULLDOWN PEGADA NEUTRA', desc:'COSTAS · LATÍSSIMO · PEGADA PARALELA ESTREITA', sets:3, reps:12, rest:45, load:55, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:null },
+      { name:'PALLOF PRESS', desc:'CORE · ANTI-ROTAÇÃO · PROTEÇÃO LOMBAR · 12 REPS CADA LADO', sets:3, reps:12, rest:30, load:12, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'pallof_press' },
+      { name:'OBLÍQUO + INFRA BOSU', desc:'OBLÍQUO E CORE INFERIOR · FAZ OS DOIS JUNTOS NO BOSU', sets:3, reps:20, rest:30, load:0, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'obliquo_cruzado' },
     ]
   },
   HB: {
     label: 'B', title: 'Peito · Ombro · Braços', focus: 'HIPERTROFIA',
     color: '#CD7F32',
-    durationTotal: '~75 min',
+    durationTotal: '~65 min',
     exercises: [
-      { name:'AGACHAMENTO SMITH', desc:'QUADRÍCEPS · COXA PARALELA · JOELHO ALINHADO', sets:4, reps:6, rest:90, load:100, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'agachamento_smith' },
+      { name:'AGACHAMENTO SMITH', desc:'QUADRÍCEPS · COXA PARALELA · JOELHO ALINHADO COM PÉ', sets:4, reps:6, rest:60, load:100, lastLoad:'última: —', isFoco:true, conjugated:null, imageKey:'agachamento_smith' },
       { name:'LEG PRESS 45°', desc:'QUADRÍCEPS · GLÚTEO · CONJUGADO COM GÊMEOS', sets:3, reps:10, rest:0, load:280, lastLoad:'última: —', isFoco:false, conjugated:'GÊMEOS NO LEG PRESS', imageKey:'leg_press_45' },
-      { name:'GÊMEOS NO LEG PRESS', desc:'PANTURRILHA · AMPLITUDE COMPLETA · PONTA DO PÉ NA BORDA', sets:3, reps:15, rest:90, load:280, lastLoad:'última: —', isFoco:false, conjugated:'LEG PRESS 45°', imageKey:'gemeos_leg' },
-      { name:'CADEIRA EXTENSORA UNILATERAL', desc:'QUADRÍCEPS · ISOLADO · 12 REPS CADA PERNA', sets:3, reps:12, rest:45, load:57, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'cadeira_extensora' },
-      { name:'SUPINO RETO BARRA', desc:'PEITORAL · FORÇA BASE · BARRA LIVRE', sets:4, reps:8, rest:0, load:60, lastLoad:'última: —', isFoco:true, conjugated:'CRUCIFIXO HALTERES', imageKey:'supino_reto' },
-      { name:'CRUCIFIXO HALTERES', desc:'PEITORAL · ABERTURA · MESMO BANCO · 12kg CADA', sets:3, reps:12, rest:75, load:12, lastLoad:'última: —', isFoco:false, conjugated:'SUPINO RETO BARRA', imageKey:null },
-      { name:'SUPINO INCLINADO HALTERES', desc:'PEITORAL SUPERIOR · BANCO 30° · 22kg CADA', sets:3, reps:10, rest:60, load:22, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'supino_inclinado' },
-      { name:'DESENVOLVIMENTO MILITAR HALTERES', desc:'DELTÓIDE · OMBROS · SENTADO COM APOIO · 18kg CADA', sets:4, reps:8, rest:0, load:18, lastLoad:'última: —', isFoco:true, conjugated:'ELEVAÇÃO LATERAL', imageKey:'desenvolvimento_militar' },
-      { name:'ELEVAÇÃO LATERAL', desc:'DELTÓIDE MÉDIO · SEM IMPULSO · HALTERES 8kg CADA', sets:4, reps:12, rest:60, load:8, lastLoad:'última: —', isFoco:false, conjugated:'DESENVOLVIMENTO MILITAR HALTERES', imageKey:null },
+      { name:'GÊMEOS NO LEG PRESS', desc:'PANTURRILHA · PONTA DO PÉ NA BORDA · AMPLITUDE COMPLETA', sets:3, reps:15, rest:60, load:280, lastLoad:'última: —', isFoco:false, conjugated:'LEG PRESS 45°', imageKey:'gemeos_leg' },
+      { name:'CADEIRA EXTENSORA UNILATERAL', desc:'QUADRÍCEPS · ISOLADO · 12 REPS CADA PERNA · COMEÇA ESQUERDA', sets:3, reps:12, rest:30, load:57, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'cadeira_extensora' },
+      { name:'SUPINO RETO BARRA', desc:'PEITORAL · DESCE ATÉ TOCAR PEITO · PEGADA LARGURA DOS OMBROS', sets:4, reps:8, rest:0, load:60, lastLoad:'última: —', isFoco:true, conjugated:'CRUCIFIXO HALTERES', imageKey:'supino_reto' },
+      { name:'CRUCIFIXO HALTERES', desc:'PEITORAL · ABERTURA · MESMO BANCO · 12kg CADA', sets:3, reps:12, rest:60, load:12, lastLoad:'última: —', isFoco:false, conjugated:'SUPINO RETO BARRA', imageKey:null },
+      { name:'SUPINO INCLINADO HALTERES', desc:'PEITORAL SUPERIOR · BANCO 30° · 22kg CADA', sets:3, reps:10, rest:45, load:22, lastLoad:'última: —', isFoco:false, conjugated:null, imageKey:'supino_inclinado' },
+      { name:'DESENVOLVIMENTO MILITAR HALTERES', desc:'DELTÓIDE · SENTADO COM APOIO · AMPLITUDE COMPLETA · 18kg CADA', sets:4, reps:8, rest:0, load:18, lastLoad:'última: —', isFoco:true, conjugated:'ELEVAÇÃO LATERAL', imageKey:'desenvolvimento_militar' },
+      { name:'ELEVAÇÃO LATERAL', desc:'DELTÓIDE MÉDIO · SEM IMPULSO · HALTERES 8kg CADA', sets:4, reps:12, rest:45, load:8, lastLoad:'última: —', isFoco:false, conjugated:'DESENVOLVIMENTO MILITAR HALTERES', imageKey:null },
+      { name:'ROTAÇÃO EXTERNA POLIA', desc:'MANGUITO ROTADOR · COTOVELO COLADO · PREHAB · 90°', sets:3, reps:15, rest:0, load:5, lastLoad:'última: —', isFoco:false, conjugated:'ROTAÇÃO INTERNA POLIA', imageKey:'rotacao_polia' },
+      { name:'ROTAÇÃO INTERNA POLIA', desc:'MANGUITO ROTADOR · MESMO SETUP · EMENDA APÓS EXTERNA · CADA LADO', sets:3, reps:15, rest:30, load:5, lastLoad:'última: —', isFoco:false, conjugated:'ROTAÇÃO EXTERNA POLIA', imageKey:'rotacao_interna_polia' },
       { name:'ROSCA DIRETA BARRA', desc:'BÍCEPS · BARRA RETA · SEM IMPULSO · DESCE CONTROLADO', sets:4, reps:10, rest:0, load:25, lastLoad:'última: —', isFoco:false, conjugated:'TRÍCEPS TESTA BARRA', imageKey:'rosca_direta' },
-      { name:'TRÍCEPS TESTA BARRA', desc:'TRÍCEPS · MESMA BARRA DA ROSCA', sets:4, reps:10, rest:60, load:30, lastLoad:'última: —', isFoco:false, conjugated:'ROSCA DIRETA BARRA', imageKey:'triceps_testa' },
+      { name:'TRÍCEPS TESTA BARRA', desc:'TRÍCEPS · MESMA BARRA DA ROSCA', sets:4, reps:10, rest:45, load:30, lastLoad:'última: —', isFoco:false, conjugated:'ROSCA DIRETA BARRA', imageKey:'triceps_testa' },
       { name:'ROSCA MARTELO HALTERE', desc:'BRAQUIAL · BRAQUIORRADIAL · 10kg CADA', sets:3, reps:12, rest:0, load:10, lastLoad:'última: —', isFoco:false, conjugated:'TRÍCEPS CORDA POLIA', imageKey:'rosca_martelo' },
-      { name:'TRÍCEPS CORDA POLIA', desc:'TRÍCEPS · POLIA ALTA · ABRE CORDA NO FINAL', sets:3, reps:12, rest:60, load:25, lastLoad:'última: —', isFoco:false, conjugated:'ROSCA MARTELO HALTERE', imageKey:null },
+      { name:'TRÍCEPS CORDA POLIA', desc:'TRÍCEPS · POLIA ALTA · ABRE CORDA NO FINAL', sets:3, reps:12, rest:45, load:13.5, lastLoad:'última: —', isFoco:false, conjugated:'ROSCA MARTELO HALTERE', imageKey:null },
       { name:'PRANCHA FRONTAL', desc:'CORE · ISOMÉTRICA · 45s · MESMO COLCHONETE', sets:3, reps:1, rest:0, load:0, lastLoad:'última: —', isFoco:false, conjugated:'ABDOMINAL SUPRA', imageKey:'prancha_isometrica', isTime:true, timeSeconds:45 },
-      { name:'ABDOMINAL SUPRA', desc:'RETO ABDOMINAL · CRUNCH CLÁSSICO', sets:3, reps:20, rest:30, load:0, lastLoad:'última: —', isFoco:false, conjugated:'PRANCHA FRONTAL', imageKey:'abdominal_supra' },
+      { name:'ABDOMINAL SUPRA', desc:'RETO ABDOMINAL · CRUNCH CLÁSSICO · EMENDA APÓS PRANCHA', sets:3, reps:20, rest:30, load:0, lastLoad:'última: —', isFoco:false, conjugated:'PRANCHA FRONTAL', imageKey:'abdominal_supra' },
     ]
   }
 };
@@ -5236,7 +5274,7 @@ setInterval(() => {
 
   <div class="prog-hero">
     <div class="prog-super" style="color:rgba(205,127,50,.85);">HIPERTROFIA</div>
-    <div class="prog-title">6 Semanas · Progressão de Carga</div>
+    <div class="prog-title">6 Semanas · Padrão Futebol</div>
     <div class="prog-sub">Carlos Henrique · alterna A e B · 4-6x por semana</div>
   </div>
 
@@ -5248,7 +5286,7 @@ setInterval(() => {
         <div class="pc-letter" style="background:linear-gradient(135deg,rgba(205,127,50,.14),rgba(205,127,50,.02));border-color:rgba(205,127,50,.5);color:#E89A5A;text-shadow:0 0 8px rgba(205,127,50,.45);">A</div>
         <div class="pc-info">
           <div class="pc-title">Posterior · Costas · Glúteo</div>
-          <div class="pc-focus">5 blocos · ordem corrigida · 2 supersets</div>
+          <div class="pc-focus">5 blocos · descansos futebol · 2 supersets</div>
         </div>
         <div class="pc-arrow">→</div>
       </div>
@@ -5259,7 +5297,7 @@ setInterval(() => {
         <span class="muscle-tag">core</span>
       </div>
       <div class="pc-stats">
-        <div class="pc-stat"><div class="pc-stat-lbl">DURAÇÃO</div><div class="pc-stat-val">~70min</div></div>
+        <div class="pc-stat"><div class="pc-stat-lbl">DURAÇÃO</div><div class="pc-stat-val">~55min</div></div>
         <div class="pc-stat"><div class="pc-stat-lbl">EXERCÍCIOS</div><div class="pc-stat-val">12</div></div>
         <div class="pc-stat"><div class="pc-stat-lbl">SUPERSETS</div><div class="pc-stat-val">2</div></div>
       </div>
@@ -5271,7 +5309,7 @@ setInterval(() => {
         <div class="pc-letter" style="background:linear-gradient(135deg,rgba(205,127,50,.14),rgba(205,127,50,.02));border-color:rgba(205,127,50,.5);color:#E89A5A;text-shadow:0 0 8px rgba(205,127,50,.45);">B</div>
         <div class="pc-info">
           <div class="pc-title">Peito · Ombro · Braços</div>
-          <div class="pc-focus">5 blocos · 5 supersets · volume dobrado</div>
+          <div class="pc-focus">5 blocos · 6 supersets · volume dobrado</div>
         </div>
         <div class="pc-arrow">→</div>
       </div>
@@ -5282,9 +5320,9 @@ setInterval(() => {
         <span class="muscle-tag">braços</span>
       </div>
       <div class="pc-stats">
-        <div class="pc-stat"><div class="pc-stat-lbl">DURAÇÃO</div><div class="pc-stat-val">~75min</div></div>
-        <div class="pc-stat"><div class="pc-stat-lbl">EXERCÍCIOS</div><div class="pc-stat-val">14</div></div>
-        <div class="pc-stat"><div class="pc-stat-lbl">SUPERSETS</div><div class="pc-stat-val">5</div></div>
+        <div class="pc-stat"><div class="pc-stat-lbl">DURAÇÃO</div><div class="pc-stat-val">~65min</div></div>
+        <div class="pc-stat"><div class="pc-stat-lbl">EXERCÍCIOS</div><div class="pc-stat-val">17</div></div>
+        <div class="pc-stat"><div class="pc-stat-lbl">SUPERSETS</div><div class="pc-stat-val">6</div></div>
       </div>
     </div>
 
