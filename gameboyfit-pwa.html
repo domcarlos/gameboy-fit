@@ -3219,7 +3219,7 @@ function finishSetV2() {
 
         const aFull = aEx.completedSeries >= aEx.sets;
         const bFull = bEx.completedSeries >= bEx.sets;
-        const restSecs = Math.max(aEx.rest || 0, bEx.rest || 0, 60);
+        const restSecs = Math.max(aEx.rest || 0, bEx.rest || 0);
 
         // Se ambos terminaram → fecha o par
         if (aFull && bFull) {

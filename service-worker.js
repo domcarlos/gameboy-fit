@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gameboyfit-v13';
+const CACHE_NAME = 'gameboyfit-v14';
 
 // Arquivos para cache offline
 const CACHE_FILES = [
